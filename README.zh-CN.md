@@ -9,6 +9,7 @@ Zotero 仍然是论文、附件和元数据的来源。这个 Skill 把 Zotero P
 ## 它能做什么
 
 - 扫描本地 Zotero PDF 附件根目录。
+- 如果当前 Codex 会话具备 Zotero 插件或本地 API 能力，可以先通过 Zotero 分类、条目、附件路径或已索引全文来定位论文。
 - 生成 `paper_index.json`，记录 PDF 路径、镜像笔记路径、来源状态和阅读状态。
 - 根据绝对路径、相对路径、文件名、文件名主体或标题片段匹配论文。
 - 为 Codex 构建 reading pack，辅助论文阅读和总结。
@@ -39,6 +40,13 @@ paper_index.json + reading pack
 
 脚本负责可重复、可验证的工作：读取配置、扫描 PDF、计算镜像路径、提取文本、安全渲染笔记、备份旧笔记、刷新索引。Codex 负责论文理解：总结论文解决的问题、方法、流程、实验、局限性，以及这篇论文对你当前研究方向的价值。
 
+论文定位可以走两条路径：
+
+- **可选的 Zotero 集成路径**：如果当前 Codex 会话可以使用 Zotero 插件或 Zotero local API，Codex 可以先查询 collection、搜索 Zotero 条目、查看子附件、获取本地附件路径，或在用户需要正文时读取 Zotero 已索引全文。
+- **附件目录扫描兜底路径**：如果 Zotero 能力不可用、未启用、匹配结果不明确，或无法返回本地 PDF 路径，项目内置脚本会直接扫描配置好的 `zotero_attachment_root`。
+
+Zotero 集成只是可选的上游发现方式，不是必需依赖。Python 脚本仍然负责这个项目自己的确定性笔记流程：配置读取、路径匹配、PDF 文本提取兜底、镜像输出路径、HTML 渲染、旧笔记备份和索引刷新。
+
 ## 工作边界
 
 当你的论文已经由 Zotero 或 Zotero 相关附件工作流管理时，可以使用这个 Skill。例如 Zotero 默认 storage、linked attachment、Attanger、ZotMoov、OneDrive、iCloud、Dropbox、本地磁盘目录或挂载为本地路径的 NAS。
@@ -64,6 +72,8 @@ paper_index.json + reading pack
 - Python 3.9 或更高版本。
 
 核心工作流只使用 Python 标准库。即使不安装第三方 Python 包，也可以扫描 PDF、匹配论文、计算镜像笔记路径、渲染 HTML 笔记，并刷新本地总索引。
+
+Codex 的 Zotero 插件或 Zotero local API 是可选增强。如果可用，它能让按 Zotero 分类、collection 或条目查找论文更自然；如果不可用，这个 Skill 仍然可以通过配置好的附件根目录工作。
 
 全文 PDF 提取是可选但推荐的能力。如果希望 `readpack` 提取论文正文，请至少提供下面一种工具：
 

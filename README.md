@@ -9,6 +9,7 @@ Zotero stays the source of truth for papers, attachments, and metadata. This ski
 ## What It Does
 
 - Scans a local Zotero PDF attachment root.
+- Optionally uses a Codex-side Zotero capability, when available, to resolve collections, Zotero items, attachment paths, or indexed full text before falling back to path scanning.
 - Builds `paper_index.json` with PDF paths, mirrored note paths, source status, and read status.
 - Matches papers by absolute path, relative path, filename, file stem, or title fragment.
 - Builds reading packs for Codex-assisted paper reading.
@@ -39,6 +40,13 @@ local index.html
 
 The scripts handle repeatable operations: config loading, PDF discovery, path mirroring, text extraction, safe note rendering, backups, and index refreshes. Codex handles the paper understanding: summarizing the problem, method, pipeline, experiments, limitations, and value for your research.
 
+There are two discovery paths:
+
+- **Optional Zotero integration**: If the current Codex session has Zotero plugin or local API access, Codex can first use Zotero to search collections, find saved items, inspect child attachments, retrieve local attachment paths, or read Zotero-indexed full text.
+- **Path-scan fallback**: If Zotero access is unavailable, disabled, ambiguous, or cannot return a local PDF path, the bundled Python scripts scan your configured `zotero_attachment_root` directly.
+
+The Zotero integration is an optional entry point, not a required dependency. The Python scripts are still responsible for this project's deterministic note workflow: config, path matching, PDF extraction fallback, mirrored output paths, HTML rendering, backups, and index refresh.
+
 ## Workflow Boundary
 
 Use the skill when you want Codex to work with papers already managed by Zotero or a Zotero-linked attachment workflow such as Zotero storage, linked attachments, Attanger, ZotMoov, OneDrive, iCloud, Dropbox, a local folder, or a mounted NAS path.
@@ -64,6 +72,8 @@ Required:
 - Python 3.9 or newer.
 
 The core workflow uses Python standard library modules only. You can scan PDFs, match papers, compute mirrored note paths, render HTML notes, and refresh the local index without installing third-party Python packages.
+
+A Codex Zotero plugin or Zotero local API access is optional. When available, it can make collection-based or item-based lookup more natural, but the skill still works through the configured attachment root when it is not available.
 
 Full-text PDF extraction is optional but recommended. For `readpack` to extract paper text, provide at least one of:
 

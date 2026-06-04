@@ -50,24 +50,34 @@ On first use, if config is missing, ask the user for both paths and run `init --
 
 Use `init` to save config, create the notes data directories, run a first scan, and write an initial `index.html`.
 
+## Zotero-First Resolution
+
+When the user refers to a Zotero collection, category, saved item, paper title, attachment, or Zotero-indexed full text, first check whether a Zotero plugin, Zotero local API, or equivalent Codex-side Zotero capability is available in the current session.
+
+If available, use that Zotero capability first for discovery: list collections, search Zotero items, inspect child attachments, retrieve a local attachment file URL/path, or read Zotero-indexed full text when the user asked for paper contents. Keep Zotero as read-only for this skill. Enabling or restarting Zotero's local API, importing records, or writing to Zotero requires explicit user confirmation.
+
+If Zotero capability is unavailable, Zotero Desktop is not running, local API access is disabled, no matching attachment exists, or no local PDF path/full text can be retrieved, fall back to the bundled scripts. The scripts remain the deterministic layer for config, path scanning, matching, reading packs, mirrored note paths, note rendering, backups, and index refresh.
+
 ## Workflow
 
 When the user asks to read a Zotero paper or generate a local paper note:
 
-1. Load config; run `doctor` if paths or tools are uncertain.
-2. Run `scan` if `paper_index.json` is missing or stale.
-3. Use `find` or `readpack` to resolve the requested paper.
-4. If multiple candidates match, show candidates and ask the user to choose. Do not guess.
-5. Read the reading pack and available extracted text. If extraction is unavailable or failed, continue only with metadata/path-level evidence and state the limitation.
-6. Write a structured note payload following `references/note-writing-guide.md`.
-7. Run `render-note` to write the standalone HTML note.
-8. Let `render-note` refresh `note_index.json` and `index.html`.
-9. Report the note path, index path, validation performed, and any extraction limitations.
+1. Try Zotero-first resolution when the request names a collection, Zotero item, attachment, or title that may be resolved through Zotero. Use the resulting local PDF path or indexed full text only if it is actually available.
+2. Load config; run `doctor` if paths or tools are uncertain.
+3. Run `scan` if `paper_index.json` is missing or stale, or when Zotero-first resolution did not provide a usable local PDF path.
+4. Use `find` or `readpack` to resolve the requested paper from the configured attachment root. If Zotero-first produced an absolute PDF path under `zotero_attachment_root`, pass that path to the script.
+5. If multiple candidates match, show candidates and ask the user to choose. Do not guess.
+6. Read the reading pack and available extracted text or Zotero-indexed full text. If extraction/full text is unavailable or failed, continue only with metadata/path-level evidence and state the limitation.
+7. Write a structured note payload following `references/note-writing-guide.md`.
+8. Run `render-note` to write the standalone HTML note.
+9. Let `render-note` refresh `note_index.json` and `index.html`.
+10. Report the note path, index path, validation performed, and any extraction limitations.
 
 ## Safety Rules
 
 - Do not write to, move, rename, delete, or reorganize files under `zotero_attachment_root`.
 - Do not read or modify Zotero SQLite.
+- Do not modify the Zotero library through plugin/API actions unless the user explicitly asks and confirms the exact write.
 - Do not upload PDF contents unless the user explicitly asks and approves.
 - Write only inside `notes_root`; reject paths that escape through absolute paths, `..`, or symlinks.
 - Back up an existing HTML note inside `notes_root/data/backups/` before replacing it.
