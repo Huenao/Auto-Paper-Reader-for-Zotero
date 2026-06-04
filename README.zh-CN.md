@@ -8,8 +8,8 @@ Zotero 仍然是论文、附件和元数据的来源。这个 Skill 把 Zotero P
 
 ## 它能做什么
 
-- 扫描本地 Zotero PDF 附件根目录。
-- 如果当前 Codex 会话具备 Zotero 插件或本地 API 能力，可以先通过 Zotero 分类、条目、附件路径或已索引全文来定位论文。
+- 优先使用 Codex Zotero 插件或 Zotero local API 来定位 collection、条目、PDF 附件、本地 PDF 路径和 Zotero 已索引全文。
+- 只有在 Zotero-first 访问无法定位论文或正文，并且用户同意后，才使用较慢的 Python 附件目录扫描兜底。
 - 生成 `paper_index.json`，记录 PDF 路径、镜像笔记路径、来源状态和阅读状态。
 - 根据绝对路径、相对路径、文件名、文件名主体或标题片段匹配论文。
 - 为 Codex 构建 reading pack，辅助论文阅读和总结。
@@ -25,7 +25,8 @@ Zotero 仍然是论文、附件和元数据的来源。这个 Skill 把 Zotero P
 ```text
 Zotero 附件根目录（只读）
         |
-        | scan / match / extract
+        | 优先 Zotero 插件/local API
+        | 必要且获准后再 scan / match / extract 兜底
         v
 paper_index.json + reading pack
         |
@@ -38,14 +39,14 @@ paper_index.json + reading pack
 本地 index.html 总索引
 ```
 
-脚本负责可重复、可验证的工作：读取配置、扫描 PDF、计算镜像路径、提取文本、安全渲染笔记、备份旧笔记、刷新索引。Codex 负责论文理解：总结论文解决的问题、方法、流程、实验、局限性，以及这篇论文对你当前研究方向的价值。
+脚本负责可重复、可验证的工作：读取配置、获准后的 PDF 发现兜底、计算镜像路径、提取文本、安全渲染笔记、备份旧笔记、刷新索引。Codex 负责论文理解：总结论文解决的问题、方法、流程、实验、局限性，以及这篇论文对你当前研究方向的价值。
 
-论文定位可以走两条路径：
+论文定位可以走两条路径，并且优先级很重要：
 
-- **可选的 Zotero 集成路径**：如果当前 Codex 会话可以使用 Zotero 插件或 Zotero local API，Codex 可以先查询 collection、搜索 Zotero 条目、查看子附件、获取本地附件路径，或在用户需要正文时读取 Zotero 已索引全文。
-- **附件目录扫描兜底路径**：如果 Zotero 能力不可用、未启用、匹配结果不明确，或无法返回本地 PDF 路径，项目内置脚本会直接扫描配置好的 `zotero_attachment_root`。
+- **推荐的 Zotero-first 路径**：如果当前 Codex 会话可以使用 Zotero 插件或 Zotero local API，Codex 应该先检查 Zotero 状态，查询 collection、搜索 Zotero 条目、查看子附件、获取本地 PDF 路径，并在可用时读取 Zotero 已索引全文。
+- **获准后的附件目录扫描兜底路径**：如果 Zotero 能力不可用、未启用、匹配结果不明确、找不到论文、无法返回本地 PDF 路径，或无法提供所需全文，Codex 必须先询问用户，才可以使用较慢的内置 Python 脚本扫描配置好的 `zotero_attachment_root` 或从 PDF 提取文本。
 
-Zotero 集成只是可选的上游发现方式，不是必需依赖。Python 脚本仍然负责这个项目自己的确定性笔记流程：配置读取、路径匹配、PDF 文本提取兜底、镜像输出路径、HTML 渲染、旧笔记备份和索引刷新。
+如果 Zotero 已经提供可用的 PDF 路径或已索引全文，Codex 不应该再扫描附件目录。Python 脚本仍然负责这个项目自己的确定性笔记流程：配置读取、获准后的路径匹配、PDF 文本提取兜底、镜像输出路径、HTML 渲染、旧笔记备份和索引刷新。
 
 ## 工作边界
 
@@ -71,9 +72,9 @@ Zotero 集成只是可选的上游发现方式，不是必需依赖。Python 脚
 - 支持 Skills 的 Codex 环境。
 - Python 3.9 或更高版本。
 
-核心工作流只使用 Python 标准库。即使不安装第三方 Python 包，也可以扫描 PDF、匹配论文、计算镜像笔记路径、渲染 HTML 笔记，并刷新本地总索引。
+核心工作流只使用 Python 标准库。获得兜底访问许可后，即使不安装第三方 Python 包，也可以扫描 PDF、匹配论文、计算镜像笔记路径、渲染 HTML 笔记，并刷新本地总索引。
 
-Codex 的 Zotero 插件或 Zotero local API 是可选增强。如果可用，它能让按 Zotero 分类、collection 或条目查找论文更自然；如果不可用，这个 Skill 仍然可以通过配置好的附件根目录工作。
+Codex 的 Zotero 插件或 Zotero local API 是首选访问路径。如果可用，应先通过它查找论文和附件，而不是扫描附件根目录。这个 Skill 在 Zotero-first 访问不可用或无法解析所需 PDF/正文时，仍然可以通过配置好的附件根目录工作，但 Codex 应该先询问用户是否允许使用较慢的 Python 兜底。
 
 全文 PDF 提取是可选但推荐的能力。如果希望 `readpack` 提取论文正文，请至少提供下面一种工具：
 
@@ -128,7 +129,7 @@ python3 /Users/huwt/.codex/skills/.system/skill-installer/scripts/install-skill-
 重启后可以显式调用：
 
 ```text
-Use $auto-paper-reader-for-zotero to scan my Zotero PDF folder and generate a local HTML paper note.
+Use $auto-paper-reader-for-zotero to locate/read my Zotero paper with the Zotero plugin first, then use approved Python fallback only if needed, and generate a local HTML paper note.
 ```
 
 ## 首次设置
@@ -179,32 +180,32 @@ python3 scripts/aprz.py init \
 
 ## 快速开始
 
-检查配置和可用 PDF 文本提取工具：
+检查配置和可用 PDF 文本提取工具。正常论文查找时，Codex 应该在 Zotero-first 访问失败并获得你同意后，才把这个命令作为附件目录兜底访问的一部分：
 
 ```bash
 python3 scripts/aprz.py doctor
 ```
 
-扫描 PDF 并刷新索引：
+扫描 PDF 并刷新索引。扫描是较慢的论文发现兜底路径，Codex 应该在 Zotero-first 失败后先询问你：
 
 ```bash
 python3 scripts/aprz.py scan
 python3 scripts/aprz.py refresh-index
 ```
 
-查找论文：
+查找论文。应先使用 Zotero 搜索；只有 Zotero-first 访问失败并获得你同意后，才使用这个兜底：
 
 ```bash
 python3 scripts/aprz.py find "Attention Is All You Need"
 ```
 
-构建给 Codex 使用的 reading pack：
+构建给 Codex 使用的 reading pack。如果 Zotero 已索引全文不可用且仍需从 PDF 提取正文，Codex 应该先询问你是否允许使用这个兜底：
 
 ```bash
 python3 scripts/aprz.py readpack "Attention Is All You Need" --json
 ```
 
-查看镜像笔记路径：
+查看镜像笔记路径。如果 Zotero 已经提供了可用 PDF 路径，Codex 应该避免额外兜底查找，除非生成笔记确实需要：
 
 ```bash
 python3 scripts/aprz.py note-path "Attention Is All You Need" --json
@@ -249,6 +250,8 @@ Use $auto-paper-reader-for-zotero to refresh my paper index and show me which pa
 ```
 
 如果同一个查询匹配到多篇论文，Skill 应该列出候选项并让你选择，而不是自行猜测。
+
+论文查找时，Codex 应该先通过 Zotero collection、条目和附件定位 PDF。如果无法获得可用本地 PDF 路径或已索引全文，Codex 应该说明阻塞点，并在使用较慢的 Python 兜底命令（`doctor`、`scan`、`find`、`readpack` 或 `note-path`）前请求你的同意。论文或正文解析完成后，`render-note` 和 `refresh-index` 仍然是正常的笔记输出命令。
 
 ## 工作区与输出结构
 
@@ -326,11 +329,12 @@ AI 笔记根目录保存所有生成文件：
 
 Auto-Paper-Reader-for-Zotero 支持渐进式 PDF 读取：
 
-1. **元数据模式**：不需要第三方包。支持扫描、匹配、镜像笔记路径、笔记渲染和索引刷新。
-2. **文本提取模式**：使用当前环境中可用的提取器，为 `readpack` 生成正文文本。
-3. **未来高级模式**：后续可以考虑加入结构化解析器或 OCR，用于图表、表格、公式和扫描版 PDF。当前版本不要求也没有实现这些能力。
+1. **Zotero-first 模式**：使用 Zotero 插件/local API 处理 collection、条目搜索、子附件、本地 PDF 路径和 Zotero 已索引全文。
+2. **获准后的元数据兜底模式**：不需要第三方包。支持扫描、匹配、镜像笔记路径、笔记渲染和索引刷新。
+3. **获准后的文本提取兜底模式**：使用当前环境中可用的提取器，为 `readpack` 生成正文文本。
+4. **未来高级模式**：后续可以考虑加入结构化解析器或 OCR，用于图表、表格、公式和扫描版 PDF。当前版本不要求也没有实现这些能力。
 
-`readpack` 会按顺序尝试当前环境已经可用的文本提取工具：
+在用户同意 PDF 提取兜底后，`readpack` 会按顺序尝试当前环境已经可用的文本提取工具：
 
 1. `pypdf`
 2. `pdfplumber`

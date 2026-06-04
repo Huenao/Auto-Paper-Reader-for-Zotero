@@ -2,6 +2,8 @@
 
 Zotero remains the source of truth for paper items, attachments, and metadata. This skill only creates AI-generated notes and indexes.
 
+Prefer Codex's Zotero plugin or Zotero local API for collection, item, attachment, local PDF path, and indexed full-text access. Python attachment-root scanning is slower and must be treated as a fallback, not the default route.
+
 ## Allowed
 
 - Read PDF files under the configured `zotero_attachment_root`.
@@ -12,6 +14,8 @@ Zotero remains the source of truth for paper items, attachments, and metadata. T
 
 ## Forbidden Without Explicit User Authorization
 
+- Silently switch from Zotero plugin/local API access to Python attachment-root scanning.
+- Use `doctor`, `scan`, `find`, `readpack`, or `note-path` as fallback access commands after Zotero-first failure.
 - Modify Zotero SQLite.
 - Write files into the Zotero attachment root.
 - Move, rename, delete, or reorganize Zotero PDFs.
@@ -25,6 +29,7 @@ Stop and ask the user when:
 
 - config is missing and cannot be inferred from command arguments;
 - a computed note path escapes `notes_root`;
+- Zotero-first access fails and fallback scanning, matching, reading-pack creation, or note-path lookup is needed;
 - a user requests destructive changes to Zotero files;
 - multiple paper candidates match and no exact choice was supplied;
 - PDF extraction failed but the user asks for a confident full-text conclusion.
