@@ -22,7 +22,9 @@ python3 scripts/aprz.py render-note --paper-id "sha256:..." --payload "/tmp/note
 python3 scripts/aprz.py refresh-index
 ```
 
-PDF text extraction tries only tools already available in the environment: `pypdf`, `pdfplumber`, then `pdftotext`. If none are available, `readpack` returns `extraction_status: "no_extractor_available"` and Codex must not claim to have read the full PDF.
+Core commands for scanning, matching, mirrored note paths, note rendering, and index refresh use Python standard library only. Full-text PDF extraction is optional: `readpack` tries tools already available in the environment in this order: `pypdf`, `pdfplumber`, then `pdftotext`.
+
+If no extractor is available, `readpack` returns `extraction_status: "no_extractor_available"`. Use metadata/path-only mode in that state and do not claim to have read the full PDF.
 
 ## References
 
@@ -53,7 +55,7 @@ When the user asks to read a Zotero paper or generate a local paper note:
 2. Run `scan` if `paper_index.json` is missing or stale.
 3. Use `find` or `readpack` to resolve the requested paper.
 4. If multiple candidates match, show candidates and ask the user to choose. Do not guess.
-5. Read the reading pack and available extracted text.
+5. Read the reading pack and available extracted text. If extraction is unavailable or failed, continue only with metadata/path-level evidence and state the limitation.
 6. Write a structured note payload following `references/note-writing-guide.md`.
 7. Run `render-note` to write the standalone HTML note.
 8. Let `render-note` refresh `note_index.json` and `index.html`.

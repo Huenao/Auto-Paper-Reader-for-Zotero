@@ -6,8 +6,6 @@ Auto-Paper-Reader-for-Zotero is a Codex Skill for building a local AI reading-no
 
 Zotero stays the source of truth for papers, attachments, and metadata. This skill treats your Zotero PDF attachment root as read-only, writes AI-generated HTML notes under a separate `notes_root`, and keeps a static browser-openable `index.html` for search and review.
 
-This project is inspired by the paper-reading workflow shape of [hwang847/codex-paper-reader](https://github.com/hwang847/codex-paper-reader), but is designed around Zotero attachment folders instead of taking over paper storage.
-
 ## What It Does
 
 - Scans a local Zotero PDF attachment root.
@@ -58,6 +56,23 @@ This skill does not:
 
 Existing notes are backed up inside `notes_root/data/backups/` before replacement.
 
+## Requirements
+
+Required:
+
+- Codex with Skills support.
+- Python 3.9 or newer.
+
+The core workflow uses Python standard library modules only. You can scan PDFs, match papers, compute mirrored note paths, render HTML notes, and refresh the local index without installing third-party Python packages.
+
+Full-text PDF extraction is optional but recommended. For `readpack` to extract paper text, provide at least one of:
+
+- `pypdf`
+- `pdfplumber`
+- `pdftotext`
+
+If none of these extractors is available, `readpack` still returns paper metadata, paths, and note targets, but sets `extraction_status: "no_extractor_available"`. Codex must not claim to have read the full PDF in that state.
+
 ## Skill Layout
 
 ```text
@@ -89,11 +104,7 @@ tests/
 
 ## Installation
 
-Install the skill into Codex with either the GitHub installer or a local symlink.
-
-### Option 1: Install from GitHub
-
-Use this when installing from the published repository:
+Install the skill from GitHub:
 
 ```bash
 python3 /Users/huwt/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
@@ -103,19 +114,6 @@ python3 /Users/huwt/.codex/skills/.system/skill-installer/scripts/install-skill-
 ```
 
 Restart Codex after installation so the new skill is discovered.
-
-### Option 2: Local Symlink
-
-Use this when developing the skill locally and you want Codex to pick up future edits from this checkout.
-
-```bash
-mkdir -p "$HOME/.codex/skills"
-
-ln -s "/Users/huwt/Library/CloudStorage/OneDrive-个人/Codex/Skills/Auto-Paper-Reader-for-Zotero" \
-  "$HOME/.codex/skills/auto-paper-reader-for-zotero"
-```
-
-Restart Codex after creating the symlink.
 
 After restart, invoke it explicitly:
 
@@ -274,9 +272,15 @@ Example:
 
 See [references/metadata-schema.md](references/metadata-schema.md) for the generated index and note payload contracts.
 
-## PDF Text Extraction
+## PDF Reading Modes
 
-The skill does not install PDF extraction dependencies by default. `readpack` tries tools already available in this order:
+Auto-Paper-Reader-for-Zotero supports progressive PDF reading:
+
+1. **Metadata-only mode**: Works without third-party packages. Supports scanning, matching, mirrored note paths, note rendering, and index refresh.
+2. **Text-extraction mode**: Uses an available extractor to produce full text for `readpack`.
+3. **Future advanced mode**: Structured parsers or OCR may be added later for figures, tables, equations, and scanned PDFs. These are not required or implemented in the current version.
+
+`readpack` tries text extractors already available in this order:
 
 1. `pypdf`
 2. `pdfplumber`
@@ -335,6 +339,8 @@ python3 /Users/huwt/.codex/skills/.system/skill-creator/scripts/quick_validate.p
 ```
 
 If validation fails with `ModuleNotFoundError: No module named 'yaml'`, install or provide PyYAML only after explicit approval from the repository owner.
+
+For local development, you may symlink this checkout into your Codex skills directory, but ordinary users should install from GitHub as shown above.
 
 ## License
 
