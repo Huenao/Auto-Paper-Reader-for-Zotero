@@ -1,0 +1,11 @@
+.DS_Store
+__pycache__/
+*.pyc
+
+.auto-paper-reader/
+
+notes/
+paper-notes/
+data/
+
+*.log

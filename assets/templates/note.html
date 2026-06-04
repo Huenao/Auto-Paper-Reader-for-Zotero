@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="{{ css_href }}">
+</head>
+<body>
+  <main class="note">
+    <nav class="topbar">
+      <a href="{{ index_href }}">返回总索引</a>
+      <a href="{{ pdf_href }}">打开原 PDF</a>
+    </nav>
+    <header>
+      <p class="path">{{ pdf_rel_path }}</p>
+      <h1>{{ title }}</h1>
+      <p class="meta">{{ authors }} {{ year }} {{ venue }}</p>
+      <p class="summary">{{ summary }}</p>
+    </header>
+    <section><h2>论文解决的问题</h2>{{ problem }}</section>
+    <section><h2>方法概览</h2>{{ method_overview }}</section>
+    <section><h2>方法 Pipeline</h2>{{ pipeline }}</section>
+    <section><h2>关键创新点</h2>{{ innovations }}</section>
+    <section><h2>实验设置</h2>{{ experiments }}</section>
+    <section><h2>主要结论</h2>{{ findings }}</section>
+    <section><h2>局限性</h2>{{ limitations }}</section>
+    <section><h2>对当前研究的价值</h2>{{ value_for_user }}</section>
+    <section><h2>后续可追问问题</h2>{{ follow_up_questions }}</section>
+    <footer>
+      <p>Generated at {{ generated_at }}. Updated at {{ updated_at }}.</p>
+    </footer>
+  </main>
+</body>
+</html>

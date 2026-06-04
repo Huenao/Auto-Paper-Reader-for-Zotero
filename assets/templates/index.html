@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auto-Paper-Reader-for-Zotero</title>
+  <link rel="stylesheet" href="assets/index.css">
+</head>
+<body>
+  <main class="app">
+    <header class="masthead">
+      <h1>Auto-Paper-Reader-for-Zotero</h1>
+      <p>Last refreshed: {{ generated_at }}</p>
+    </header>
+    <section class="stats">
+      <div><strong>{{ pdf_total }}</strong><span>PDF 总数</span></div>
+      <div><strong>{{ noted_total }}</strong><span>已有笔记</span></div>
+      <div><strong>{{ unread_total }}</strong><span>未读论文</span></div>
+      <div><strong>{{ category_total }}</strong><span>分类数量</span></div>
+    </section>
+    <section class="controls">
+      <input id="search" type="search" placeholder="搜索标题、作者、标签、路径、摘要">
+      <select id="status">
+        <option value="">全部状态</option>
+        <option value="read">已有笔记</option>
+        <option value="unread">未生成笔记</option>
+        <option value="source_missing">源 PDF 缺失</option>
+      </select>
+    </section>
+    <section class="layout">
+      <aside>
+        <h2>分类</h2>
+        <div id="categories"></div>
+      </aside>
+      <section>
+        <h2>论文列表</h2>
+        <div id="papers"></div>
+      </section>
+    </section>
+  </main>
+  <script>
+    window.APRZ_NOTE_INDEX = {{ note_index_json }};
+  </script>
+  <script src="assets/index.js"></script>
+</body>
+</html>

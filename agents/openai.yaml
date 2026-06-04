@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoPaper Reader"
+  short_description: "Build Zotero-linked HTML paper notes"
+  default_prompt: "Use $auto-paper-reader-for-zotero to scan my Zotero PDF folder and generate a local HTML paper note."
