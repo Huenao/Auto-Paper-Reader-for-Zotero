@@ -121,15 +121,53 @@ python3 /Users/huwt/.codex/skills/.system/skill-installer/scripts/install-skill-
 Use $auto-paper-reader-for-zotero to scan my Zotero PDF folder and generate a local HTML paper note.
 ```
 
-## 快速开始
+## 首次设置
 
-初始化本地论文笔记工作区：
+第一次使用时，需要配置两个会长期复用的路径：
+
+- `zotero_attachment_root`：只读的 Zotero PDF 附件根目录。
+- `notes_root`：用于保存 HTML 笔记和索引的可写目录。
+
+推荐写入全局配置 `~/.config/auto-paper-reader-for-zotero/config.json`，这样后续不同 Codex 会话和不同工作目录都可以复用同一套路径：
 
 ```bash
 python3 scripts/aprz.py init \
+  --scope global \
   --zotero-attachment-root "/path/to/zotero/attachments" \
   --notes-root "/path/to/ai/paper-notes"
 ```
+
+如果没有找到配置，Codex 应该先询问你这两个路径，然后运行同样的全局初始化命令。
+
+如果某个工作区需要单独覆盖全局配置，可以写入项目配置：
+
+```bash
+python3 scripts/aprz.py init \
+  --scope project \
+  --zotero-attachment-root "/path/to/zotero/attachments" \
+  --notes-root "/path/to/ai/paper-notes"
+```
+
+项目配置保存到 `.auto-paper-reader/config.json`，并且优先级高于全局配置。
+
+也可以手动创建全局配置：
+
+```json
+{
+  "zotero_attachment_root": "/path/to/zotero/attachments",
+  "notes_root": "/path/to/ai/paper-notes",
+  "language": "zh-CN",
+  "note_format": "html"
+}
+```
+
+保存路径为：
+
+```text
+~/.config/auto-paper-reader-for-zotero/config.json
+```
+
+## 快速开始
 
 检查配置和可用 PDF 文本提取工具：
 
@@ -259,7 +297,9 @@ AI 笔记根目录保存所有生成文件：
 4. `~/.config/auto-paper-reader-for-zotero/config.json`。
 5. `APRZ_ZOTERO_ATTACHMENT_ROOT` 和 `APRZ_NOTES_ROOT`。
 
-示例：
+因为项目配置会先于全局配置读取，特殊工作区可以覆盖全局默认路径，而不需要改动全局配置文件。
+
+全局配置示例：
 
 ```json
 {

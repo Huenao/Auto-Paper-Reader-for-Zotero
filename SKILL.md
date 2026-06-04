@@ -12,7 +12,8 @@ Use this skill to add an AI note layer on top of a Zotero PDF attachment folder.
 Resolve paths from this skill directory. Use the unified CLI:
 
 ```text
-python3 scripts/aprz.py init --zotero-attachment-root "/path/to/zotero/attachments" --notes-root "/path/to/ai/paper-notes"
+python3 scripts/aprz.py init --scope global --zotero-attachment-root "/path/to/zotero/attachments" --notes-root "/path/to/ai/paper-notes"
+python3 scripts/aprz.py init --scope project --zotero-attachment-root "/path/to/zotero/attachments" --notes-root "/path/to/ai/paper-notes"
 python3 scripts/aprz.py doctor
 python3 scripts/aprz.py scan
 python3 scripts/aprz.py find "Self-RAG"
@@ -45,7 +46,9 @@ Resolve `zotero_attachment_root` and `notes_root` in this order:
 5. `APRZ_ZOTERO_ATTACHMENT_ROOT` and `APRZ_NOTES_ROOT`.
 6. If still missing, stop and ask the user for both paths.
 
-Use `init` to create a project config, create the notes data directories, run a first scan, and write an initial `index.html`.
+On first use, if config is missing, ask the user for both paths and run `init --scope global` so later Codex sessions and working directories can reuse `~/.config/auto-paper-reader-for-zotero/config.json`. Use `init --scope project` only when the user wants a workspace-specific override in `.auto-paper-reader/config.json`.
+
+Use `init` to save config, create the notes data directories, run a first scan, and write an initial `index.html`.
 
 ## Workflow
 

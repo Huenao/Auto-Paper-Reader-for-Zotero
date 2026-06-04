@@ -121,15 +121,53 @@ After restart, invoke it explicitly:
 Use $auto-paper-reader-for-zotero to scan my Zotero PDF folder and generate a local HTML paper note.
 ```
 
-## Quickstart
+## First-Time Setup
 
-Initialize the local note workspace:
+On first use, configure the two persistent paths:
+
+- `zotero_attachment_root`: your read-only Zotero PDF attachment root.
+- `notes_root`: the writable folder for generated HTML notes and indexes.
+
+The recommended setup writes a global config to `~/.config/auto-paper-reader-for-zotero/config.json`, so later Codex sessions and working directories can reuse the same paths:
 
 ```bash
 python3 scripts/aprz.py init \
+  --scope global \
   --zotero-attachment-root "/path/to/zotero/attachments" \
   --notes-root "/path/to/ai/paper-notes"
 ```
+
+Codex should ask you for these two paths if no config exists, then run the same global init command.
+
+For a workspace-specific override, write project config instead:
+
+```bash
+python3 scripts/aprz.py init \
+  --scope project \
+  --zotero-attachment-root "/path/to/zotero/attachments" \
+  --notes-root "/path/to/ai/paper-notes"
+```
+
+Project config is stored at `.auto-paper-reader/config.json` and takes priority over the global config.
+
+You can also create the global config manually:
+
+```json
+{
+  "zotero_attachment_root": "/path/to/zotero/attachments",
+  "notes_root": "/path/to/ai/paper-notes",
+  "language": "zh-CN",
+  "note_format": "html"
+}
+```
+
+Save it as:
+
+```text
+~/.config/auto-paper-reader-for-zotero/config.json
+```
+
+## Quickstart
 
 Check configuration and available PDF extraction tools:
 
@@ -259,7 +297,9 @@ Configuration is resolved in this order:
 4. `~/.config/auto-paper-reader-for-zotero/config.json`.
 5. `APRZ_ZOTERO_ATTACHMENT_ROOT` and `APRZ_NOTES_ROOT`.
 
-Example:
+Because project config is checked before global config, a specialized workspace can override your global defaults without changing the global file.
+
+Global config example:
 
 ```json
 {

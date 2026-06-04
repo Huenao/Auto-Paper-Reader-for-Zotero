@@ -127,6 +127,13 @@ def save_project_config(cfg: APRZConfig, cwd: Optional[Path] = None) -> Path:
     return path
 
 
+def save_global_config(cfg: APRZConfig, env: Optional[Mapping[str, str]] = None) -> Path:
+    path = global_config_path(env)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(cfg.to_json_dict(), ensure_ascii=False, indent=2) + "\n")
+    return path
+
+
 def data_dir(cfg: APRZConfig) -> Path:
     return cfg.notes_root / "data"
 

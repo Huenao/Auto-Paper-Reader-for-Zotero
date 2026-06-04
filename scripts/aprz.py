@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from build_readpack import build_readpack
-from config import APRZConfig, ConfigError, ensure_notes_layout, load_config, save_project_config
+from config import APRZConfig, ConfigError, ensure_notes_layout, load_config, save_global_config, save_project_config
 from match_paper import find_paper
 from render_index import refresh_index
 from render_note import render_note
@@ -30,7 +30,10 @@ def cmd_init(args) -> int:
     notes_root.mkdir(parents=True, exist_ok=True)
     cfg = APRZConfig(zotero_attachment_root=pdf_root, notes_root=notes_root)
     ensure_notes_layout(cfg)
-    config_path = save_project_config(cfg)
+    if args.scope == "project":
+        config_path = save_project_config(cfg)
+    else:
+        config_path = save_global_config(cfg)
     scan_result = scan_pdfs(cfg)
     index_result = refresh_index(cfg)
     _json(
@@ -117,6 +120,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     init = sub.add_parser("init", help="Initialize config, notes layout, scan, and index")
+    init.add_argument("--scope", choices=["global", "project"], default="global", help="Where to save config.json")
     init.add_argument("--zotero-attachment-root", required=True)
     init.add_argument("--notes-root", required=True)
     init.set_defaults(func=cmd_init)
