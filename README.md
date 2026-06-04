@@ -147,19 +147,19 @@ python3 scripts/aprz.py refresh-index
 Find a paper:
 
 ```bash
-python3 scripts/aprz.py find "Self-RAG"
+python3 scripts/aprz.py find "Attention Is All You Need"
 ```
 
 Build a reading pack for Codex:
 
 ```bash
-python3 scripts/aprz.py readpack "Self-RAG" --json
+python3 scripts/aprz.py readpack "Attention Is All You Need" --json
 ```
 
 Show the mirrored note path:
 
 ```bash
-python3 scripts/aprz.py note-path "Self-RAG" --json
+python3 scripts/aprz.py note-path "Attention Is All You Need" --json
 ```
 
 Render a note from a Codex-authored payload:
@@ -187,13 +187,13 @@ My AI notes root is /Users/me/PaperNotes.
 ```
 
 ```text
-Use $auto-paper-reader-for-zotero to read the Self-RAG paper from my Zotero folder.
-Focus on the method pipeline, training objective, experiments, and limitations.
+Use $auto-paper-reader-for-zotero to read the Attention Is All You Need paper from my Zotero folder.
+Focus on the transformer architecture, attention mechanism, experiments, and limitations.
 ```
 
 ```text
-Use $auto-paper-reader-for-zotero to generate a Chinese HTML note for APEX-SQL.
-Emphasize task definition, agent flow, tool use, state maintenance, and reproducibility details.
+Use $auto-paper-reader-for-zotero to generate a Chinese HTML note for LLaMA: Open and Efficient Foundation Language Models.
+Emphasize model scale, training data, efficiency choices, evaluation setup, and reproducibility details.
 ```
 
 ```text
@@ -208,11 +208,11 @@ The attachment root is read-only:
 
 ```text
 <zotero_attachment_root>/
-  1.LLM/
-    RAG/
-      Self-RAG.pdf
-  2.Text-to-SQL/
-    APEX-SQL.pdf
+  1.Foundations/
+    Transformers/
+      Attention Is All You Need.pdf
+  2.Foundation-Models/
+    LLaMA - Open and Efficient Foundation Language Models.pdf
 ```
 
 The notes root is where generated files live:
@@ -220,11 +220,11 @@ The notes root is where generated files live:
 ```text
 <notes_root>/
   index.html
-  1.LLM/
-    RAG/
-      Self-RAG.html
-  2.Text-to-SQL/
-    APEX-SQL.html
+  1.Foundations/
+    Transformers/
+      Attention Is All You Need.html
+  2.Foundation-Models/
+    LLaMA - Open and Efficient Foundation Language Models.html
   data/
     paper_index.json
     note_index.json
@@ -238,13 +238,13 @@ The notes root is where generated files live:
 For a PDF at:
 
 ```text
-<zotero_attachment_root>/1.LLM/RAG/Self-RAG.pdf
+<zotero_attachment_root>/1.Foundations/Transformers/Attention Is All You Need.pdf
 ```
 
 the default HTML note path is:
 
 ```text
-<notes_root>/1.LLM/RAG/Self-RAG.html
+<notes_root>/1.Foundations/Transformers/Attention Is All You Need.html
 ```
 
 This mirrored path design makes it easy to see which note belongs to which Zotero-managed PDF.
@@ -341,7 +341,3 @@ python3 /Users/huwt/.codex/skills/.system/skill-creator/scripts/quick_validate.p
 If validation fails with `ModuleNotFoundError: No module named 'yaml'`, install or provide PyYAML only after explicit approval from the repository owner.
 
 For local development, you may symlink this checkout into your Codex skills directory, but ordinary users should install from GitHub as shown above.
-
-## License
-
-No license has been selected yet.

@@ -147,19 +147,19 @@ python3 scripts/aprz.py refresh-index
 查找论文：
 
 ```bash
-python3 scripts/aprz.py find "Self-RAG"
+python3 scripts/aprz.py find "Attention Is All You Need"
 ```
 
 构建给 Codex 使用的 reading pack：
 
 ```bash
-python3 scripts/aprz.py readpack "Self-RAG" --json
+python3 scripts/aprz.py readpack "Attention Is All You Need" --json
 ```
 
 查看镜像笔记路径：
 
 ```bash
-python3 scripts/aprz.py note-path "Self-RAG" --json
+python3 scripts/aprz.py note-path "Attention Is All You Need" --json
 ```
 
 根据 Codex 生成的 note payload 渲染 HTML 笔记：
@@ -187,13 +187,13 @@ My AI notes root is /Users/me/PaperNotes.
 ```
 
 ```text
-Use $auto-paper-reader-for-zotero to read the Self-RAG paper from my Zotero folder.
-Focus on the method pipeline, training objective, experiments, and limitations.
+Use $auto-paper-reader-for-zotero to read the Attention Is All You Need paper from my Zotero folder.
+Focus on the transformer architecture, attention mechanism, experiments, and limitations.
 ```
 
 ```text
-Use $auto-paper-reader-for-zotero to generate a Chinese HTML note for APEX-SQL.
-Emphasize task definition, agent flow, tool use, state maintenance, and reproducibility details.
+Use $auto-paper-reader-for-zotero to generate a Chinese HTML note for LLaMA: Open and Efficient Foundation Language Models.
+Emphasize model scale, training data, efficiency choices, evaluation setup, and reproducibility details.
 ```
 
 ```text
@@ -208,11 +208,11 @@ Zotero 附件根目录是只读来源：
 
 ```text
 <zotero_attachment_root>/
-  1.LLM/
-    RAG/
-      Self-RAG.pdf
-  2.Text-to-SQL/
-    APEX-SQL.pdf
+  1.Foundations/
+    Transformers/
+      Attention Is All You Need.pdf
+  2.Foundation-Models/
+    LLaMA - Open and Efficient Foundation Language Models.pdf
 ```
 
 AI 笔记根目录保存所有生成文件：
@@ -220,11 +220,11 @@ AI 笔记根目录保存所有生成文件：
 ```text
 <notes_root>/
   index.html
-  1.LLM/
-    RAG/
-      Self-RAG.html
-  2.Text-to-SQL/
-    APEX-SQL.html
+  1.Foundations/
+    Transformers/
+      Attention Is All You Need.html
+  2.Foundation-Models/
+    LLaMA - Open and Efficient Foundation Language Models.html
   data/
     paper_index.json
     note_index.json
@@ -238,13 +238,13 @@ AI 笔记根目录保存所有生成文件：
 例如 PDF 位于：
 
 ```text
-<zotero_attachment_root>/1.LLM/RAG/Self-RAG.pdf
+<zotero_attachment_root>/1.Foundations/Transformers/Attention Is All You Need.pdf
 ```
 
 默认生成的 HTML 笔记路径是：
 
 ```text
-<notes_root>/1.LLM/RAG/Self-RAG.html
+<notes_root>/1.Foundations/Transformers/Attention Is All You Need.html
 ```
 
 这种镜像路径设计让你长期维护笔记时更容易判断：哪篇 PDF 对应哪篇 AI 笔记、哪些论文还没有笔记、某个分类目录下有哪些已读论文。
@@ -341,7 +341,3 @@ python3 /Users/huwt/.codex/skills/.system/skill-creator/scripts/quick_validate.p
 如果校验失败并提示 `ModuleNotFoundError: No module named 'yaml'`，说明当前 Python 环境缺少 PyYAML。不要在未经仓库所有者确认的情况下安装新依赖。
 
 本地开发时，可以把当前 checkout symlink 到 Codex skills 目录；普通用户应优先使用上面的 GitHub 安装方式。
-
-## License
-
-尚未选择 License。
