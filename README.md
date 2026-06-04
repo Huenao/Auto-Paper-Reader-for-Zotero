@@ -47,6 +47,42 @@ assets/
 tests/
 ```
 
+## Installation
+
+Install the skill into Codex with either a local symlink or the GitHub installer.
+
+### Option 1: Local Symlink
+
+Use this when you are developing the skill locally and want Codex to pick up future edits from this checkout.
+
+```bash
+mkdir -p "$HOME/.codex/skills"
+
+ln -s "/Users/huwt/Library/CloudStorage/OneDrive-个人/Codex/Skills/Auto-Paper-Reader-for-Zotero" \
+  "$HOME/.codex/skills/auto-paper-reader-for-zotero"
+```
+
+Restart Codex after creating the symlink.
+
+### Option 2: Install from GitHub
+
+Use this when installing from the published repository:
+
+```bash
+python3 /Users/huwt/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo Huenao/Auto-Paper-Reader-for-Zotero \
+  --path . \
+  --name auto-paper-reader-for-zotero
+```
+
+Restart Codex after installation so the new skill is discovered.
+
+After restart, invoke it explicitly in Codex:
+
+```text
+Use $auto-paper-reader-for-zotero to scan my Zotero PDF folder and generate a local HTML paper note.
+```
+
 ## Quick Start
 
 Initialize the local note workspace:
