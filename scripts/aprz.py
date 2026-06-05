@@ -12,7 +12,7 @@ from extract_visuals import extract_visuals_for_paper_id, extract_visuals_for_pd
 from match_paper import find_paper
 from render_index import refresh_index
 from render_note import render_note
-from scan_pdfs import index_pdf_path, scan_pdfs
+from scan_pdfs import index_pdf_path, initialize_empty_paper_index, scan_pdfs
 
 
 def _json(data: object) -> None:
@@ -35,13 +35,17 @@ def cmd_init(args) -> int:
         config_path = save_project_config(cfg)
     else:
         config_path = save_global_config(cfg)
-    scan_result = scan_pdfs(cfg)
+    if args.scan:
+        paper_index = scan_pdfs(cfg)
+    else:
+        paper_index = initialize_empty_paper_index(cfg)
     index_result = refresh_index(cfg)
     _json(
         {
             "ok": True,
             "config_path": str(config_path),
-            "paper_index": scan_result["summary"],
+            "scan_performed": bool(args.scan),
+            "paper_index": paper_index["summary"],
             "index_abs_path": index_result["index_abs_path"],
         }
     )
@@ -187,10 +191,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", type=Path, help="Path to config.json")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    init = sub.add_parser("init", help="Initialize config, notes layout, scan, and index")
+    init = sub.add_parser("init", help="Initialize config, notes layout, and an empty index")
     init.add_argument("--scope", choices=["global", "project"], default="global", help="Where to save config.json")
     init.add_argument("--zotero-attachment-root", required=True)
     init.add_argument("--notes-root", required=True)
+    init.add_argument("--scan", action="store_true", help="Scan the whole attachment root during initialization")
     init.set_defaults(func=cmd_init)
 
     doctor = sub.add_parser("doctor", help="Check config, paths, and extraction tools")

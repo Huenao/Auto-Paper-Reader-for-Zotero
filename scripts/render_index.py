@@ -9,7 +9,7 @@ from typing import Dict, List
 
 from config import APRZConfig, data_dir, ensure_notes_layout
 from path_utils import path_to_file_href, require_within_root, safe_id_filename
-from scan_pdfs import load_paper_index, paper_index_path
+from scan_pdfs import initialize_empty_paper_index, load_paper_index, paper_index_path
 
 
 def now_iso() -> str:
@@ -119,9 +119,7 @@ def build_note_index(cfg: APRZConfig) -> Dict[str, object]:
 def refresh_index(cfg: APRZConfig) -> Dict[str, object]:
     ensure_notes_layout(cfg)
     if not paper_index_path(cfg).exists():
-        from scan_pdfs import scan_pdfs
-
-        scan_pdfs(cfg)
+        initialize_empty_paper_index(cfg)
     _copy_index_assets(cfg)
     note_index = build_note_index(cfg)
     note_index_path(cfg).write_text(json.dumps(note_index, ensure_ascii=False, indent=2) + "\n")

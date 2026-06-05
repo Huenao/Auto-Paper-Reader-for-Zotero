@@ -155,6 +155,16 @@ python3 scripts/aprz.py init \
 
 Codex should ask you for these two paths if no config exists, then run the same global init command.
 
+By default, `init` is lightweight: it saves config, creates the notes directory layout, writes an empty `paper_index.json`, and creates an initial `index.html` without scanning the whole attachment root. To index all existing PDFs during setup, opt in explicitly:
+
+```bash
+python3 scripts/aprz.py init \
+  --scope global \
+  --zotero-attachment-root "/path/to/zotero/attachments" \
+  --notes-root "/path/to/ai/paper-notes" \
+  --scan
+```
+
 For a workspace-specific override, write project config instead:
 
 ```bash
@@ -191,7 +201,7 @@ Check configuration and available PDF/visual extraction tools:
 python3 scripts/aprz.py doctor
 ```
 
-Scan PDFs and refresh the index. Scanning is the slower fallback route for root-level paper discovery, so Codex should ask before using it unless you explicitly request attachment-root indexing:
+Scan PDFs and refresh the index. Scanning is the slower fallback route for root-level paper discovery, so Codex should ask before using it unless you explicitly request attachment-root indexing. You can also use `init --scan` during first-time setup when you knowingly want a full initial library index:
 
 ```bash
 python3 scripts/aprz.py scan

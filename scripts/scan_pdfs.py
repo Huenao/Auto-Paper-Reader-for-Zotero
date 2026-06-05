@@ -140,6 +140,11 @@ def _write_paper_index(cfg: APRZConfig, items: List[Dict[str, object]], warnings
     return output
 
 
+def initialize_empty_paper_index(cfg: APRZConfig) -> Dict[str, object]:
+    ensure_notes_layout(cfg)
+    return _write_paper_index(cfg, [], [])
+
+
 def scan_pdfs(cfg: APRZConfig, force_hash: bool = False) -> Dict[str, object]:
     ensure_notes_layout(cfg)
     previous = load_paper_index(cfg)

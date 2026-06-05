@@ -155,6 +155,16 @@ python3 scripts/aprz.py init \
 
 如果没有找到配置，Codex 应该先询问你这两个路径，然后运行同样的全局初始化命令。
 
+默认情况下，`init` 是轻量初始化：保存配置、创建笔记目录结构、写入空的 `paper_index.json`，并创建初始 `index.html`，不会扫描整个附件根目录。如果你确实希望在设置时索引所有现有 PDF，需要显式开启：
+
+```bash
+python3 scripts/aprz.py init \
+  --scope global \
+  --zotero-attachment-root "/path/to/zotero/attachments" \
+  --notes-root "/path/to/ai/paper-notes" \
+  --scan
+```
+
 如果某个工作区需要单独覆盖全局配置，可以写入项目配置：
 
 ```bash
@@ -191,7 +201,7 @@ python3 scripts/aprz.py init \
 python3 scripts/aprz.py doctor
 ```
 
-扫描 PDF 并刷新索引。扫描是较慢的整库论文发现兜底路径，Codex 应该先询问你，除非你已经明确要求索引附件根目录：
+扫描 PDF 并刷新索引。扫描是较慢的整库论文发现兜底路径，Codex 应该先询问你，除非你已经明确要求索引附件根目录。如果你明确希望首次设置时就建立完整库索引，也可以使用 `init --scan`：
 
 ```bash
 python3 scripts/aprz.py scan

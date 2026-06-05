@@ -14,6 +14,7 @@ Resolve paths from this skill directory. Use the unified CLI:
 ```text
 python3 scripts/aprz.py init --scope global --zotero-attachment-root "/path/to/zotero/attachments" --notes-root "/path/to/ai/paper-notes"
 python3 scripts/aprz.py init --scope project --zotero-attachment-root "/path/to/zotero/attachments" --notes-root "/path/to/ai/paper-notes"
+python3 scripts/aprz.py init --scope global --zotero-attachment-root "/path/to/zotero/attachments" --notes-root "/path/to/ai/paper-notes" --scan
 python3 scripts/aprz.py doctor
 python3 scripts/aprz.py scan
 python3 scripts/aprz.py scan --force-hash
@@ -31,7 +32,7 @@ python3 scripts/aprz.py refresh-index
 
 Use `python3` for standard-library commands. In Codex Desktop, when workspace dependencies are available, prefer the bundled workspace Python for `readpack` or other PDF extraction commands because it may include optional extractors such as `pypdf`.
 
-Core commands for scanning, matching, mirrored note paths, note rendering, and index refresh use Python standard library only. Full-library `scan` is incremental by default: it reuses an existing content fingerprint when a PDF's relative path, size, and modified time are unchanged. Use `scan --force-hash` only when a full integrity rebuild is needed.
+Core commands for scanning, matching, mirrored note paths, note rendering, and index refresh use Python standard library only. `init` creates config, notes layout, an empty `paper_index.json`, and an initial `index.html` without traversing the attachment root. Full-library `scan` is incremental by default: it reuses an existing content fingerprint when a PDF's relative path, size, and modified time are unchanged. Use `init --scan` or `scan` only when the user explicitly wants attachment-root indexing. Use `scan --force-hash` only when a full integrity rebuild is needed.
 
 For a single Zotero-resolved attachment, prefer `index-pdf --pdf-path` instead of `scan`. It validates that the PDF is under `zotero_attachment_root`, updates only that paper in `paper_index.json`, and avoids traversing the entire attachment library.
 
@@ -75,7 +76,7 @@ Resolve `zotero_attachment_root` and `notes_root` in this order:
 
 On first use, if config is missing, ask the user for both paths and run `init --scope global` so later Codex sessions and working directories can reuse `~/.config/auto-paper-reader-for-zotero/config.json`. Use `init --scope project` only when the user wants a workspace-specific override in `.auto-paper-reader/config.json`.
 
-Use `init` to save config, create the notes data directories, run a first scan, and write an initial `index.html`. If the user provides both roots and asks to initialize the note system, treat that as approval for this initial scan. A future CLI may add `--no-scan`, but this version does not implement it.
+Use `init` to save config, create the notes data directories, write an empty `paper_index.json`, and write an initial `index.html`. Do not run a first scan during default initialization. If the user explicitly asks to index the attachment root during setup, use `init --scan`; otherwise add papers later with `index-pdf --pdf-path` or a separate confirmed `scan`.
 
 ## Zotero-First Resolution
 

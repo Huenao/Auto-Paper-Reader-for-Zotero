@@ -63,6 +63,40 @@ class CliInitTests(unittest.TestCase):
             self.assertEqual(Path(result["config_path"]).resolve(), expected.resolve())
             self.assertTrue(expected.exists())
             self.assertFalse((workspace / ".auto-paper-reader" / "config.json").exists())
+            self.assertFalse(result["scan_performed"])
+            self.assertEqual(result["paper_index"]["pdf_total"], 0)
+            self.assertTrue((notes_root / "index.html").exists())
+            paper_index = json.loads((notes_root / "data" / "paper_index.json").read_text())
+            self.assertEqual(paper_index["items"], [])
+
+    def test_init_scan_flag_preserves_whole_library_scan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pdf_root, notes_root = self.make_roots(root)
+            workspace = root / "workspace"
+            home = root / "home"
+            workspace.mkdir()
+
+            result = self.run_main_json(
+                [
+                    "init",
+                    "--scope",
+                    "project",
+                    "--zotero-attachment-root",
+                    str(pdf_root),
+                    "--notes-root",
+                    str(notes_root),
+                    "--scan",
+                ],
+                cwd=workspace,
+                home=home,
+            )
+
+            self.assertTrue(result["scan_performed"])
+            self.assertEqual(result["paper_index"]["pdf_total"], 1)
+            paper_index = json.loads((notes_root / "data" / "paper_index.json").read_text())
+            self.assertEqual(len(paper_index["items"]), 1)
+            self.assertEqual(paper_index["items"][0]["pdf_rel_path"], "Paper.pdf")
 
     def test_init_project_scope_preserves_project_config_behavior(self):
         with tempfile.TemporaryDirectory() as tmp:

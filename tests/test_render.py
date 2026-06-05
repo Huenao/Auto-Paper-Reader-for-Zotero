@@ -245,6 +245,22 @@ class RenderTests(unittest.TestCase):
             self.assertIn("paperCardTemplate", html)
             self.assertIn("queueList", html)
 
+    def test_refresh_index_creates_empty_index_without_scanning(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "Paper.pdf"
+            pdf.write_bytes(b"%PDF")
+
+            result = refresh_index(cfg)
+            paper_index = json.loads((cfg.notes_root / "data" / "paper_index.json").read_text())
+            note_index = json.loads((cfg.notes_root / "data" / "note_index.json").read_text())
+
+            self.assertTrue(Path(result["index_abs_path"]).exists())
+            self.assertEqual(paper_index["items"], [])
+            self.assertEqual(paper_index["summary"]["pdf_total"], 0)
+            self.assertEqual(note_index["items"], [])
+
     def test_refresh_index_embeds_preview_fields(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
