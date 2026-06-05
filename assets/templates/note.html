@@ -7,27 +7,63 @@
   <link rel="stylesheet" href="{{ css_href }}">
 </head>
 <body>
-  <main class="note">
-    <nav class="topbar">
-      <a href="{{ index_href }}">返回总索引</a>
-      <a href="{{ pdf_href }}">打开原 PDF</a>
+  <main class="note-shell">
+    <nav class="topbar" aria-label="Page actions">
+      <a class="action-link" href="{{ index_href }}">返回总索引</a>
+      {{ pdf_action }}
     </nav>
-    <header>
+
+    <header class="paper-hero">
       <p class="path">{{ pdf_rel_path }}</p>
       <h1>{{ title }}</h1>
-      <p class="meta">{{ authors }} {{ year }} {{ venue }}</p>
-      <p class="summary">{{ summary }}</p>
+      <p class="meta-line">{{ authors }} {{ year }} {{ venue }}</p>
+      <div class="paper-summary">
+        <span class="reading-status">{{ reading_status }}</span>
+        <p>{{ summary }}</p>
+      </div>
+      <div class="meta-chip-row">{{ meta_chips }}</div>
+      <div class="tag-row">{{ tag_chips }}</div>
     </header>
-    <section><h2>论文解决的问题</h2>{{ problem }}</section>
-    <section><h2>方法概览</h2>{{ method_overview }}</section>
-    <section><h2>方法 Pipeline</h2>{{ pipeline }}</section>
-    <section><h2>关键创新点</h2>{{ innovations }}</section>
-    <section><h2>实验设置</h2>{{ experiments }}</section>
-    <section><h2>主要结论</h2>{{ findings }}</section>
-    <section><h2>局限性</h2>{{ limitations }}</section>
-    <section><h2>对当前研究的价值</h2>{{ value_for_user }}</section>
-    <section><h2>后续可追问问题</h2>{{ follow_up_questions }}</section>
-    <footer>
+
+    <section class="evidence-panel" aria-label="Evidence and next action">
+      <div>
+        <span class="panel-label">证据来源</span>
+        <p>{{ evidence_basis }}</p>
+      </div>
+      <div>
+        <span class="panel-label">下一步</span>
+        {{ next_action }}
+      </div>
+    </section>
+
+    <section class="reading-layout">
+      <aside class="toc" aria-label="目录">
+        <h2>目录</h2>
+        <a href="#problem">论文解决的问题</a>
+        <a href="#method">方法概览</a>
+        <a href="#pipeline">方法 Pipeline</a>
+        <a href="#innovations">关键创新点</a>
+        <a href="#experiments">实验设置</a>
+        <a href="#findings">主要结论</a>
+        <a href="#limitations">局限性</a>
+        <a href="#value">对当前研究的价值</a>
+        <a href="#questions">后续可追问问题</a>
+      </aside>
+
+      <article class="note-sections">
+        <section id="problem" class="note-section"><h2>论文解决的问题</h2>{{ problem }}</section>
+        <section id="method" class="note-section"><h2>方法概览</h2>{{ method_overview }}</section>
+        <section id="pipeline" class="note-section"><h2>方法 Pipeline</h2>{{ pipeline }}</section>
+        <section id="innovations" class="note-section"><h2>关键创新点</h2>{{ innovations }}</section>
+        <section id="experiments" class="note-section"><h2>实验设置</h2>{{ experiments }}</section>
+        <section id="findings" class="note-section"><h2>主要结论</h2>{{ findings }}</section>
+        <section id="limitations" class="note-section"><h2>局限性</h2>{{ limitations }}</section>
+        <section id="value" class="note-section"><h2>对当前研究的价值</h2>{{ value_for_user }}</section>
+        <section id="questions" class="note-section"><h2>后续可追问问题</h2>{{ follow_up_questions }}</section>
+      </article>
+    </section>
+
+    <footer class="note-footer">
       <p>Generated at {{ generated_at }}. Updated at {{ updated_at }}.</p>
     </footer>
   </main>

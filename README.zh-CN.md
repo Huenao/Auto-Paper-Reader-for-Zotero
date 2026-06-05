@@ -14,8 +14,8 @@ Zotero 仍然是论文、附件和元数据的来源。这个 Skill 把 Zotero P
 - 根据绝对路径、相对路径、文件名、文件名主体或标题片段匹配论文。
 - 为 Codex 构建 reading pack，辅助论文阅读和总结。
 - 使用当前环境中已经存在的 PDF 文本提取工具。
-- 根据结构化 note payload 渲染中文技术 HTML 论文笔记。
-- 刷新静态 HTML 总索引，支持搜索、状态筛选、分类查看、打开笔记和打开原 PDF。
+- 根据结构化 note payload 渲染中文技术 HTML 论文笔记，包含论文摘要区、元数据 chips、证据来源、目录、打开笔记和打开原 PDF。
+- 刷新静态 HTML 论文库 dashboard，支持搜索、状态筛选、研究分类、处理队列、可展开论文卡片、打开笔记和打开原 PDF。
 - 只写入配置好的 `notes_root`。
 
 ## 工作方式
@@ -225,6 +225,57 @@ python3 scripts/aprz.py render-note \
 python3 scripts/aprz.py refresh-index
 ```
 
+## 查看 HTML 笔记
+
+生成的笔记和总索引都是静态 HTML 文件。正常使用时不需要启动 Python Web 服务。
+
+推荐的本地文件模式：
+
+```text
+<notes_root>/index.html
+<notes_root>/1.Foundations/Transformers/Attention Is All You Need.html
+```
+
+你可以直接双击 `index.html` 或任意单篇笔记，也可以在浏览器中用 `file://` URL 打开。这个模式最简单，也最适合当前项目，因为“打开原 PDF”的链接同样是本地 `file://` 链接。
+
+优点：
+
+- 不需要启动服务；
+- 离线可用；
+- 笔记系统保持为普通文件；
+- 本地 PDF 链接通常更容易直接从浏览器打开。
+
+缺点：
+
+- 不同系统和浏览器对本地文件的行为可能略有差异；
+- 有些浏览器调试功能在 HTTP URL 下更方便；
+- 如果后续加入动态加载额外文件的前端能力，`file://` 的安全限制可能比 HTTP 更严格。
+
+可选的本地 HTTP 模式：
+
+```bash
+cd "/path/to/ai/paper-notes"
+python3 -m http.server 8766 --bind 127.0.0.1
+```
+
+然后打开：
+
+```text
+http://127.0.0.1:8766/index.html
+```
+
+优点：
+
+- 给静态站点一个正常的 HTTP origin；
+- 适合浏览器调试或未来更复杂的前端功能；
+- 相对路径 CSS/JS 的行为更接近部署后的静态站点。
+
+缺点：
+
+- 需要保持终端里的 HTTP 服务运行；
+- 服务运行期间页面会在本机 localhost 上可访问；
+- 某些浏览器可能会阻止或提示 HTTP 页面打开本地 `file://` PDF 链接。
+
 ## 日常使用示例
 
 可以用自然语言让 Codex 操作这个 Skill：
@@ -357,7 +408,30 @@ Auto-Paper-Reader-for-Zotero 支持渐进式 PDF 读取：
 - 对你当前研究方向的价值；
 - 后续可追问问题。
 
+渲染器还支持受 Paper Vault 式研究 dashboard 启发的可选展示字段：
+
+- `research_area`
+- `primary_subtopic`
+- `priority`
+- `reading_status`
+- `evidence_basis`
+- `next_action`
+
+这些字段会增强单篇笔记页头部和本地总索引 dashboard；如果旧 payload 没有这些字段，也仍然可以正常渲染。
+
 写作规则见 [references/note-writing-guide.md](references/note-writing-guide.md)。
+
+## Feature Plan
+
+以下是计划或探索项，不代表当前核心功能已经实现：
+
+- 从 research-radar 或每日文献日报工作流导入筛选后的论文。
+- 为新发现论文增加 High/Medium 优先级评分。
+- 为有潜力但还缺本地 PDF、Zotero 全文或用户授权浏览器访问的论文维护全文队列。
+- 将 dashboard 研究大类控制在最多 5 个，并支持主子主题钻取。
+- 增加可选中英文双语笔记字段，方便快速浏览。
+- 在 Zotero、DOI 元数据、Better BibTeX 或用户 payload 可用时展示期刊和来源信息。
+- 在保持 Zotero 只读的前提下，用 Zotero collections、tags、citation keys 和 Better BibTeX 元数据增强笔记。
 
 ## 安全规则
 

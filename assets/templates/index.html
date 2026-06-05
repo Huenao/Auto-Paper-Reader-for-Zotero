@@ -7,37 +7,80 @@
   <link rel="stylesheet" href="assets/index.css">
 </head>
 <body>
-  <main class="app">
+  <main class="dashboard-shell">
     <header class="masthead">
-      <h1>Auto-Paper-Reader-for-Zotero</h1>
-      <p>Last refreshed: {{ generated_at }}</p>
+      <div>
+        <p class="eyebrow">Zotero Reading Memory</p>
+        <h1>Auto-Paper-Reader-for-Zotero</h1>
+      </div>
+      <p class="refresh-time">Last refreshed: {{ generated_at }}</p>
     </header>
-    <section class="stats">
-      <div><strong>{{ pdf_total }}</strong><span>PDF 总数</span></div>
-      <div><strong>{{ noted_total }}</strong><span>已有笔记</span></div>
-      <div><strong>{{ unread_total }}</strong><span>未读论文</span></div>
-      <div><strong>{{ category_total }}</strong><span>分类数量</span></div>
+
+    <section class="stats" aria-label="Library statistics">
+      <div class="stat-pill"><strong>{{ pdf_total }}</strong><span>PDF 总数</span></div>
+      <div class="stat-pill"><strong>{{ noted_total }}</strong><span>已有笔记</span></div>
+      <div class="stat-pill"><strong>{{ unread_total }}</strong><span>待读论文</span></div>
+      <div class="stat-pill"><strong>{{ category_total }}</strong><span>研究大类</span></div>
+      <div class="stat-pill"><strong>{{ queue_total }}</strong><span>处理队列</span></div>
     </section>
-    <section class="controls">
-      <input id="search" type="search" placeholder="搜索标题、作者、标签、路径、摘要">
-      <select id="status">
-        <option value="">全部状态</option>
-        <option value="read">已有笔记</option>
-        <option value="unread">未生成笔记</option>
-        <option value="source_missing">源 PDF 缺失</option>
-      </select>
+
+    <section class="control-panel" aria-label="Search and filters">
+      <label class="search-label" for="search">Search</label>
+      <input id="search" class="search-input" type="search" placeholder="搜索标题、作者、标签、路径、摘要、方法">
+      <div id="statusFilters" class="status-filters" aria-label="Status filters"></div>
     </section>
-    <section class="layout">
-      <aside>
-        <h2>分类</h2>
-        <div id="categories"></div>
+
+    <section class="dashboard-grid">
+      <aside class="panel category-panel">
+        <h2>研究分类</h2>
+        <div id="categoryGrid" class="category-grid"></div>
       </aside>
-      <section>
-        <h2>论文列表</h2>
-        <div id="papers"></div>
+
+      <section class="paper-area">
+        <div class="section-head">
+          <h2>论文列表</h2>
+          <span id="resultCount" class="result-count"></span>
+        </div>
+        <div id="papers" class="paper-list"></div>
       </section>
+
+      <aside class="panel queue-panel">
+        <h2>待处理队列</h2>
+        <div id="queueList" class="queue-list"></div>
+      </aside>
     </section>
   </main>
+
+  <template id="paperCardTemplate">
+    <article class="paper-card">
+      <div class="card-head">
+        <div>
+          <p class="meta"></p>
+          <h3></h3>
+        </div>
+        <span class="priority"></span>
+      </div>
+      <p class="area-line"></p>
+      <div class="tag-row"></div>
+      <p class="summary"></p>
+      <button class="detail-toggle" type="button" aria-expanded="false">
+        <span class="toggle-icon">+</span>
+        <span>展开详情</span>
+      </button>
+      <div class="details-panel" hidden>
+        <dl class="details">
+          <div><dt>问题</dt><dd class="problem-preview"></dd></div>
+          <div><dt>方法</dt><dd class="method-preview"></dd></div>
+          <div><dt>结论</dt><dd class="findings-preview"></dd></div>
+          <div><dt>研究价值</dt><dd class="value-preview"></dd></div>
+          <div><dt>下一步</dt><dd class="next-action"></dd></div>
+        </dl>
+        <p class="evidence"></p>
+        <div class="actions"></div>
+      </div>
+    </article>
+  </template>
+
   <script>
     window.APRZ_NOTE_INDEX = {{ note_index_json }};
   </script>

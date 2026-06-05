@@ -14,8 +14,8 @@ Zotero stays the source of truth for papers, attachments, and metadata. This ski
 - Matches papers by absolute path, relative path, filename, file stem, or title fragment.
 - Builds reading packs for Codex-assisted paper reading.
 - Extracts PDF text with tools already available in the environment.
-- Renders Chinese technical HTML notes from structured note payloads.
-- Refreshes a static HTML index with search, status filters, category views, note links, and PDF links.
+- Renders Chinese technical HTML notes with a readable paper header, metadata chips, evidence basis, table of contents, note links, and PDF links.
+- Refreshes a static HTML paper-library dashboard with search, status filters, research categories, processing queue, expandable paper cards, note links, and PDF links.
 - Writes only inside the configured `notes_root`.
 
 ## How It Works
@@ -225,6 +225,57 @@ Refresh the browser-openable index:
 python3 scripts/aprz.py refresh-index
 ```
 
+## Viewing HTML Notes
+
+The generated notes and index are static HTML files. You do not need to run a Python web service for normal use.
+
+Recommended local-file mode:
+
+```text
+<notes_root>/index.html
+<notes_root>/1.Foundations/Transformers/Attention Is All You Need.html
+```
+
+Open `index.html` or any single note by double-clicking the file, or by opening it in a browser with a `file://` URL. This is the simplest mode and is usually best for this project because local PDF links are also `file://` links.
+
+Pros:
+
+- no server setup;
+- works offline;
+- keeps the note system as plain files;
+- local PDF links are more likely to open directly from the browser.
+
+Cons:
+
+- browser behavior for local files can vary by OS and browser;
+- some browser developer features are easier when using an HTTP URL;
+- if you later add features that fetch extra files dynamically, `file://` security rules may become stricter than HTTP.
+
+Optional local HTTP mode:
+
+```bash
+cd "/path/to/ai/paper-notes"
+python3 -m http.server 8766 --bind 127.0.0.1
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8766/index.html
+```
+
+Pros:
+
+- gives the static site a normal HTTP origin;
+- useful for browser debugging or future frontend features;
+- makes relative CSS/JS paths behave like a hosted static site.
+
+Cons:
+
+- requires keeping the terminal server running;
+- the site is available on localhost while the server is running;
+- some browsers may block or warn when an HTTP page opens local `file://` PDF links.
+
 ## Everyday Use
 
 Ask Codex for paper work in natural language:
@@ -357,7 +408,30 @@ Generated notes are intended to be useful long-term research notes, not generic 
 - value for your research direction;
 - follow-up questions.
 
+The renderer also accepts optional display fields inspired by Paper Vault-style research dashboards:
+
+- `research_area`
+- `primary_subtopic`
+- `priority`
+- `reading_status`
+- `evidence_basis`
+- `next_action`
+
+These fields improve the standalone note header and local index dashboard, but old payloads remain valid when they are absent.
+
 See [references/note-writing-guide.md](references/note-writing-guide.md) for the writing contract.
+
+## Feature Plan
+
+These items are planned or exploratory; they are not implemented as core behavior yet:
+
+- Import selected papers from a research-radar or daily literature digest workflow.
+- Add High/Medium priority scoring for newly discovered papers.
+- Keep a full-text queue for promising papers that still need a local PDF, Zotero full text, or user-authorized browser access.
+- Limit dashboard research areas to at most five broad categories, with drill-down primary subtopics.
+- Add optional bilingual note fields for English/Chinese scanning.
+- Surface journal/source metadata when it is available from Zotero, DOI metadata, Better BibTeX, or user-provided payloads.
+- Enrich notes with Zotero collections, tags, citation keys, and Better BibTeX metadata while keeping Zotero itself read-only.
 
 ## Safety
 

@@ -60,6 +60,7 @@ class ConfigTests(unittest.TestCase):
             cfg = load_config(
                 cwd=root,
                 env={
+                    "HOME": str(root / "home"),
                     "APRZ_ZOTERO_ATTACHMENT_ROOT": str(pdf_root),
                     "APRZ_NOTES_ROOT": str(notes_root),
                 },
@@ -114,8 +115,9 @@ class ConfigTests(unittest.TestCase):
 
     def test_missing_config_raises_clear_error(self):
         with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
             with self.assertRaises(ConfigError):
-                load_config(cwd=Path(tmp), env={})
+                load_config(cwd=root, env={"HOME": str(root / "home")})
 
 
 if __name__ == "__main__":

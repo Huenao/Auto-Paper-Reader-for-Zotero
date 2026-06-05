@@ -80,6 +80,19 @@ Each item should include:
 - `summary`
 - `updated_at`
 
+Optional dashboard fields may also be present. They are display-only enhancements and must not be required for old notes:
+
+- `research_area`
+- `primary_subtopic`
+- `priority`
+- `reading_status`
+- `evidence_basis`
+- `problem_preview`
+- `method_preview`
+- `findings_preview`
+- `value_preview`
+- `next_action`
+
 ## Reading Pack
 
 `readpack` returns a machine-readable structure for Codex:
@@ -136,3 +149,18 @@ Codex writes this JSON payload before `render-note`:
   "status": "read"
 }
 ```
+
+Optional Paper Vault-style display fields are supported:
+
+```json
+{
+  "research_area": "RAG",
+  "primary_subtopic": "Self-Reflection",
+  "priority": "High",
+  "reading_status": "fulltext-read",
+  "evidence_basis": "Zotero indexed full text",
+  "next_action": "Compare retrieval triggers against ReAct-style agents."
+}
+```
+
+These optional fields improve the standalone note header and the local index dashboard. Do not make them mandatory; older payloads should continue to render with safe defaults.

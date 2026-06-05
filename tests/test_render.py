@@ -55,11 +55,57 @@ class RenderTests(unittest.TestCase):
             )
 
             self.assertTrue(Path(result["note_abs_path"]).exists())
-            self.assertIn("Self-RAG", note_path.read_text())
+            html = note_path.read_text()
+            self.assertIn("Self-RAG", html)
+            self.assertIn("paper-summary", html)
+            self.assertIn("reading-status", html)
+            self.assertIn("证据来源", html)
+            self.assertIn("目录", html)
+            self.assertIn("可借鉴到 RAG 代理。", html)
             backups = list((cfg.notes_root / "data" / "backups").glob("*.html"))
             self.assertEqual(len(backups), 1)
             self.assertTrue((cfg.notes_root / "data" / "note_index.json").exists())
             self.assertTrue((cfg.notes_root / "index.html").exists())
+
+    def test_render_note_accepts_optional_vault_fields(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "Agents" / "Toolformer.pdf"
+            pdf.parent.mkdir(parents=True)
+            pdf.write_bytes(b"%PDF")
+            index = scan_pdfs(cfg)
+            item = index["items"][0]
+
+            result = render_note(
+                cfg,
+                {
+                    "paper_id": item["paper_id"],
+                    "title": "Toolformer",
+                    "summary": "让语言模型学会调用工具。",
+                    "problem": "大模型需要外部工具增强。",
+                    "method_overview": "用自监督方式学习 API 调用。",
+                    "pipeline": "sample calls -> filter -> train",
+                    "experiments": "语言建模和问答任务。",
+                    "findings": "工具调用提升任务能力。",
+                    "limitations": "工具选择有限。",
+                    "value_for_user": "适合作为 agent 工具使用基线。",
+                    "research_area": "Agent Systems",
+                    "primary_subtopic": "Tool Use",
+                    "priority": "High",
+                    "reading_status": "fulltext-read",
+                    "evidence_basis": "PDF full text extraction",
+                    "next_action": "Compare with ReAct and API-Bank.",
+                },
+            )
+
+            html = Path(result["note_abs_path"]).read_text()
+            self.assertIn("Agent Systems", html)
+            self.assertIn("Tool Use", html)
+            self.assertIn("High", html)
+            self.assertIn("fulltext-read", html)
+            self.assertIn("PDF full text extraction", html)
+            self.assertIn("Compare with ReAct and API-Bank.", html)
 
     def test_refresh_index_contains_unread_and_search_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -75,6 +121,54 @@ class RenderTests(unittest.TestCase):
             self.assertIn("Auto-Paper-Reader-for-Zotero", html)
             self.assertIn("Paper.pdf", html)
             self.assertIn("index.js", html)
+            self.assertIn("dashboard-shell", html)
+            self.assertIn("categoryGrid", html)
+            self.assertIn("statusFilters", html)
+            self.assertIn("paperCardTemplate", html)
+            self.assertIn("queueList", html)
+
+    def test_refresh_index_embeds_preview_fields(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "1.LLM" / "RAG" / "Self-RAG.pdf"
+            pdf.parent.mkdir(parents=True)
+            pdf.write_bytes(b"%PDF")
+            index = scan_pdfs(cfg)
+            item = index["items"][0]
+            render_note(
+                cfg,
+                {
+                    "paper_id": item["paper_id"],
+                    "title": "Self-RAG",
+                    "summary": "提出自反思式检索增强生成框架，用于提高开放域问答事实性。",
+                    "problem": "模型需要判断何时检索以及如何评价生成内容。",
+                    "method_overview": "引入反思 token 控制检索、生成与 critique。",
+                    "pipeline": "retrieve -> generate -> critique",
+                    "experiments": "开放域问答和长文本生成实验。",
+                    "findings": "提升事实性并降低不必要检索。",
+                    "limitations": "依赖检索质量。",
+                    "value_for_user": "可借鉴到 RAG 代理。",
+                    "research_area": "RAG",
+                    "primary_subtopic": "Self-Reflection",
+                    "priority": "Medium",
+                    "reading_status": "fulltext-read",
+                    "evidence_basis": "Zotero indexed full text",
+                    "next_action": "Compare retrieval triggers.",
+                },
+            )
+
+            note_index = json.loads((cfg.notes_root / "data" / "note_index.json").read_text())
+            item = note_index["items"][0]
+            self.assertEqual(item["research_area"], "RAG")
+            self.assertEqual(item["primary_subtopic"], "Self-Reflection")
+            self.assertEqual(item["priority"], "Medium")
+            self.assertEqual(item["reading_status"], "fulltext-read")
+            self.assertEqual(item["evidence_basis"], "Zotero indexed full text")
+            self.assertEqual(item["next_action"], "Compare retrieval triggers.")
+            self.assertIn("判断何时检索", item["problem_preview"])
+            self.assertIn("反思 token", item["method_preview"])
+            self.assertIn("提升事实性", item["findings_preview"])
 
 
 if __name__ == "__main__":

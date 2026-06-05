@@ -41,6 +41,33 @@ def _load_payload(cfg: APRZConfig, paper_id: str) -> Dict[str, object]:
     return json.loads(path.read_text())
 
 
+def _plain_text(value: object) -> str:
+    if isinstance(value, list):
+        return " / ".join(str(item).strip() for item in value if str(item).strip())
+    return " ".join(str(value or "").split())
+
+
+def _preview(value: object, limit: int = 220) -> str:
+    text = _plain_text(value)
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1].rstrip() + "..."
+
+
+def _category_label(paper: Dict[str, object]) -> str:
+    category = paper.get("category_path") or []
+    if isinstance(category, list) and category:
+        return str(category[0])
+    return "Unclassified"
+
+
+def _subtopic_label(paper: Dict[str, object]) -> str:
+    category = paper.get("category_path") or []
+    if isinstance(category, list) and category:
+        return str(category[-1])
+    return "General"
+
+
 def _make_note_item(cfg: APRZConfig, paper: Dict[str, object]) -> Dict[str, object]:
     payload = _load_payload(cfg, str(paper["paper_id"]))
     note_rel = str(paper.get("note_rel_path", ""))
@@ -48,6 +75,8 @@ def _make_note_item(cfg: APRZConfig, paper: Dict[str, object]) -> Dict[str, obje
     note_exists = note_abs.exists()
     title = payload.get("title") or paper.get("title_guess") or paper.get("file_stem")
     status = payload.get("status") or ("read" if note_exists else "unread")
+    research_area = payload.get("research_area") or _category_label(paper)
+    primary_subtopic = payload.get("primary_subtopic") or _subtopic_label(paper)
     return {
         "paper_id": paper.get("paper_id"),
         "title": title,
@@ -62,8 +91,18 @@ def _make_note_item(cfg: APRZConfig, paper: Dict[str, object]) -> Dict[str, obje
         "tags": payload.get("tags", paper.get("tags", [])),
         "status": status,
         "source_status": paper.get("source_status", "available"),
-        "summary": payload.get("summary", ""),
+        "summary": _preview(payload.get("summary", ""), 180),
         "updated_at": payload.get("updated_at") or paper.get("note_updated_at"),
+        "research_area": research_area,
+        "primary_subtopic": primary_subtopic,
+        "priority": payload.get("priority", "Saved" if note_exists else "Unreviewed"),
+        "reading_status": payload.get("reading_status") or status,
+        "evidence_basis": payload.get("evidence_basis", ""),
+        "problem_preview": _preview(payload.get("problem", "")),
+        "method_preview": _preview(payload.get("method_overview", "")),
+        "findings_preview": _preview(payload.get("findings", "")),
+        "value_preview": _preview(payload.get("value_for_user", "")),
+        "next_action": _preview(payload.get("next_action", "")),
     }
 
 
@@ -88,13 +127,15 @@ def refresh_index(cfg: APRZConfig) -> Dict[str, object]:
     note_index_path(cfg).write_text(json.dumps(note_index, ensure_ascii=False, indent=2) + "\n")
 
     items = note_index["items"]
-    categories = {"/".join(item.get("category_path") or []) for item in items}
+    categories = {str(item.get("research_area") or "Unclassified") for item in items}
+    queue_total = sum(1 for item in items if item.get("status") != "read" or item.get("source_status") == "source_missing")
     context = {
         "generated_at": note_index["generated_at"],
         "pdf_total": sum(1 for item in items if item.get("source_status") == "available"),
         "noted_total": sum(1 for item in items if item.get("status") == "read"),
         "unread_total": sum(1 for item in items if item.get("status") != "read"),
         "category_total": len(categories),
+        "queue_total": queue_total,
         "note_index_json": json.dumps(note_index, ensure_ascii=False),
     }
     template = (skill_root() / "assets" / "templates" / "index.html").read_text()
