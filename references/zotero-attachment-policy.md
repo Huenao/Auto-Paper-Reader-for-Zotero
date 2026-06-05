@@ -15,7 +15,7 @@ Prefer Codex's Zotero plugin or Zotero local API for collection, item, attachmen
 ## Forbidden Without Explicit User Authorization
 
 - Silently switch from Zotero plugin/local API access to Python attachment-root scanning.
-- Use `doctor`, `scan`, `find`, `readpack`, or `note-path` as fallback access commands after Zotero-first failure.
+- Use `doctor`, `scan`, `find`, `readpack`, `note-path`, `index-pdf`, or `extract-visuals` as fallback access commands after Zotero-first failure.
 - Modify Zotero SQLite.
 - Write files into the Zotero attachment root.
 - Move, rename, delete, or reorganize Zotero PDFs.
@@ -29,7 +29,7 @@ Stop and ask the user when:
 
 - config is missing and cannot be inferred from command arguments;
 - a computed note path escapes `notes_root`;
-- Zotero-first access fails and fallback scanning, matching, reading-pack creation, or note-path lookup is needed;
+- Zotero-first access fails and fallback scanning, matching, single-PDF indexing, reading-pack creation, visual extraction, or note-path lookup is needed;
 - a user requests destructive changes to Zotero files;
 - multiple paper candidates match and no exact choice was supplied;
 - PDF extraction failed but the user asks for a confident full-text conclusion.

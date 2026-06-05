@@ -111,7 +111,7 @@ assets/
 tests/
 ```
 
-`SKILL.md` is the runtime entry point for Codex. The README files are human-facing GitHub documentation.
+`SKILL.md` is the runtime entry point for Codex. The runtime skill surface is `SKILL.md`, `agents/`, `scripts/`, `references/`, and `assets/`. The README and test files are repository-development materials for GitHub users and maintainers; a future packaged distribution may exclude them without changing the skill runtime.
 
 ## Installation
 

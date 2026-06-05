@@ -111,7 +111,7 @@ assets/
 tests/
 ```
 
-`SKILL.md` 是 Codex 真正运行 Skill 时读取的入口。README 文件面向 GitHub 读者，用来说明项目定位、安装方式和使用流程。
+`SKILL.md` 是 Codex 真正运行 Skill 时读取的入口。运行时 Skill 表面是 `SKILL.md`、`agents/`、`scripts/`、`references/` 和 `assets/`。README 和测试文件是面向 GitHub 用户及维护者的仓库开发材料；未来如果做打包分发，可以排除它们而不改变 Skill 运行时。
 
 ## 安装
 

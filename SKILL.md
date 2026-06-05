@@ -28,6 +28,8 @@ python3 scripts/aprz.py render-note --paper-id "sha256:..." --payload "/tmp/note
 python3 scripts/aprz.py refresh-index
 ```
 
+Use `python3` for standard-library commands. In Codex Desktop, when workspace dependencies are available, prefer the bundled workspace Python for `readpack` or other PDF extraction commands because it may include optional extractors such as `pypdf`.
+
 Core commands for scanning, matching, mirrored note paths, note rendering, and index refresh use Python standard library only. Full-library `scan` is incremental by default: it reuses an existing content fingerprint when a PDF's relative path, size, and modified time are unchanged. Use `scan --force-hash` only when a full integrity rebuild is needed.
 
 For a single Zotero-resolved attachment, prefer `index-pdf --pdf-path` instead of `scan`. It validates that the PDF is under `zotero_attachment_root`, updates only that paper in `paper_index.json`, and avoids traversing the entire attachment library.
@@ -35,6 +37,8 @@ For a single Zotero-resolved attachment, prefer `index-pdf --pdf-path` instead o
 Full-text PDF extraction is optional: `readpack` tries tools already available in the environment in this order: `pypdf`, `pdfplumber`, then `pdftotext`.
 
 Visual extraction is optional: `extract-visuals` uses Docling only if it is already installed. It writes figure/table assets under `<notes_root>/assets/papers/<paper_id>/images/` and a JSON payload under `<notes_root>/data/visuals/`. If Docling is unavailable, it returns `visual_extraction_status: "no_visual_extractor_available"` and the note workflow should continue without images.
+
+Do not install optional tooling such as `pytest`, PyYAML, Docling, `pypdf`, `pdfplumber`, or `pdftotext` without explicit user approval. Missing optional tools should degrade the workflow or be reported as an environment limitation.
 
 If no extractor is available, `readpack` returns `extraction_status: "no_extractor_available"`. Use metadata/path-only mode in that state and do not claim to have read the full PDF.
 
@@ -70,7 +74,7 @@ Resolve `zotero_attachment_root` and `notes_root` in this order:
 
 On first use, if config is missing, ask the user for both paths and run `init --scope global` so later Codex sessions and working directories can reuse `~/.config/auto-paper-reader-for-zotero/config.json`. Use `init --scope project` only when the user wants a workspace-specific override in `.auto-paper-reader/config.json`.
 
-Use `init` to save config, create the notes data directories, run a first scan, and write an initial `index.html`.
+Use `init` to save config, create the notes data directories, run a first scan, and write an initial `index.html`. If the user provides both roots and asks to initialize the note system, treat that as approval for this initial scan. A future CLI may add `--no-scan`, but this version does not implement it.
 
 ## Zotero-First Resolution
 
@@ -103,7 +107,7 @@ When the user asks to read a Zotero paper or generate a local paper note:
 3. Use Zotero-indexed full text for paper contents when available and requested.
 4. If Zotero returns multiple plausible papers, show candidates and ask the user to choose. Do not guess.
 5. If Zotero indexed full text is unavailable or returns 404 but a local PDF path is available, ask before using `readpack --pdf-path` to extract from that PDF; do not scan the attachment root for discovery.
-6. If Zotero-first access fails and fallback discovery or PDF extraction is needed, ask the user before running `doctor`, `scan`, `find`, `readpack`, `note-path`, or `index-pdf`. After approval, run only the minimum necessary fallback commands.
+6. If Zotero-first access fails and fallback discovery, PDF extraction, or visual extraction is needed, ask the user before running `doctor`, `scan`, `find`, `readpack`, `note-path`, `index-pdf`, or `extract-visuals`. After approval, run only the minimum necessary fallback commands.
 7. If extraction/full text is unavailable or failed, continue only with metadata/path-level evidence and state the limitation.
 8. When Zotero or the user provides a local PDF path for a specific paper, run `index-pdf --pdf-path` before rendering so the paper exists in `paper_index.json` without a full scan.
 9. Optionally run `extract-visuals` after PDF access has been approved or resolved. Inspect useful images before adding them to `visuals`; do not rely on captions alone.
