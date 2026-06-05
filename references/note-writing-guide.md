@@ -38,13 +38,14 @@ Every rendered note payload should cover:
 
 ## Visual Evidence
 
-Use `visuals` only when local visual extraction produced useful figure/table assets and the image was inspected or the limitation is explicitly stated.
+Use `visuals` only when local visual extraction produced useful figure assets and the image was inspected or the limitation is explicitly stated.
 
 - Keep `visuals[].asset_path` inside `notes_root`; outside paths are skipped by the renderer.
 - Prefer one to three high-value visuals over dumping every extracted figure.
 - Write `evidence_summary` as the insight the reader should take from the image, not just `图 1 展示了方法流程`.
 - Use `linked_section` to signal where the visual belongs: `method`, `pipeline`, `experiments`, `findings`, or `limitations`.
-- If Docling is unavailable or finds no visuals, omit `visuals` and state the limitation in `evidence_basis` only when relevant.
+- For method architecture figures, render and inspect the likely page first, then crop with an explicit bbox. Do not include the crop unless it was visually inspected.
+- If Poppler or Pillow is unavailable, omit `visuals` and state the limitation in `evidence_basis` only when relevant.
 
 Example:
 
@@ -57,7 +58,8 @@ Example:
       "label": "图 1",
       "caption": "Overview of Self-RAG.",
       "page": 3,
-      "asset_path": "/path/inside/notes_root/assets/papers/sha256.../images/figure-001.png",
+      "bbox": [120, 180, 960, 620],
+      "asset_path": "/path/inside/notes_root/assets/papers/sha256.../images/figure-001-p003.png",
       "visual_type": "figure",
       "linked_section": "method",
       "evidence_summary": "这张图把检索、生成和自我评价连接成一个推理闭环，解释了方法为什么能减少不必要检索。"

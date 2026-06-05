@@ -155,14 +155,15 @@ When using `direct_pdf_path` for note generation, run `index-pdf --pdf-path` fir
 
 ## Visual Extraction
 
-`extract-visuals` returns optional local figure/table evidence. It must not be required for old notes.
+`extract-visuals` returns optional local figure evidence cropped from a rendered PDF page. It must not be required for old notes.
 
 ```json
 {
   "visual_extraction_status": "ok",
   "paper_id": "sha256:...",
   "pdf_abs_path": "...",
-  "visuals_json_path": "<notes_root>/data/visuals/sha256....json",
+  "page_count": 12,
+  "visuals_json_path": "<notes_root>/data/visuals/sha256.../visuals.json",
   "visuals": [
     {
       "label": "图 1",
@@ -170,10 +171,11 @@ When using `direct_pdf_path` for note generation, run `index-pdf --pdf-path` fir
       "caption": "Overall architecture.",
       "caption_zh": "",
       "page": 3,
-      "asset_path": "<notes_root>/assets/papers/sha256.../images/figure-001.png",
-      "image_scale": 3.0,
+      "bbox": [120, 180, 960, 620],
+      "asset_path": "<notes_root>/assets/papers/sha256.../images/figure-001-p003.png",
+      "dpi": 200,
       "visual_type": "figure",
-      "crop_status": "exported_with_docling",
+      "crop_status": "cropped_with_poppler_pillow",
       "evidence_summary": "展示方法的两阶段处理流程。",
       "linked_section": "method"
     }
@@ -181,7 +183,9 @@ When using `direct_pdf_path` for note generation, run `index-pdf --pdf-path` fir
 }
 ```
 
-Allowed `visual_extraction_status`: `ok`, `no_visuals_found`, `no_visual_extractor_available`, `outside_attachment_root`, `pdf_not_found`, `not_pdf`, `failed`, `paper_not_found`.
+Allowed `visual_extraction_status`: `ok`, `page_rendered`, `needs_page_and_bbox`, `no_visual_extractor_available`, `outside_attachment_root`, `pdf_not_found`, `not_pdf`, `invalid_page`, `invalid_bbox`, `failed`, `paper_not_found`.
+
+Use `extract-visuals --page <n> --render-page` to write a full-page preview to `<notes_root>/data/visuals/<paper_id>/page-renders/page-NNN.png`. After inspecting the preview, rerun with `--page <n> --bbox x1,y1,x2,y2` to save the final cropped PNG under `<notes_root>/assets/papers/<paper_id>/images/`.
 
 Only `asset_path` values inside `notes_root` should be rendered in notes. Outside paths must be skipped by the renderer.
 
@@ -236,7 +240,8 @@ Optional `visuals` entries may be copied from `extract-visuals` output and edite
       "label": "图 1",
       "caption": "Overall architecture.",
       "page": 3,
-      "asset_path": "/absolute/path/inside/notes_root/assets/papers/sha256.../images/figure-001.png",
+      "bbox": [120, 180, 960, 620],
+      "asset_path": "/absolute/path/inside/notes_root/assets/papers/sha256.../images/figure-001-p003.png",
       "visual_type": "figure",
       "evidence_summary": "图中把检索、生成和 critique 串成闭环，说明该方法不是单次 RAG 调用。",
       "linked_section": "method"

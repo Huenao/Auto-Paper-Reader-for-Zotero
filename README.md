@@ -14,6 +14,7 @@ Zotero stays the source of truth for papers, attachments, and metadata. This ski
 - Matches papers by absolute path, relative path, filename, file stem, or title fragment.
 - Builds reading packs for Codex-assisted paper reading.
 - Extracts PDF text with tools already available in the environment.
+- Renders selected PDF pages with Poppler and crops inspected architecture figures with Pillow for HTML note evidence.
 - Renders Chinese technical HTML notes with a readable paper header, metadata chips, evidence basis, table of contents, note links, and PDF links.
 - Refreshes a static HTML paper-library dashboard with search, status filters, research categories, processing queue, expandable paper cards, note links, and PDF links.
 - Writes only inside the configured `notes_root`.
@@ -39,14 +40,14 @@ standalone HTML note
 local index.html
 ```
 
-The scripts handle repeatable operations: config loading, approved fallback PDF discovery, path mirroring, text extraction, safe note rendering, backups, and index refreshes. Codex handles the paper understanding: summarizing the problem, method, pipeline, experiments, limitations, and value for your research.
+The scripts handle repeatable operations: config loading, approved fallback PDF discovery, path mirroring, text extraction, page rendering, figure cropping, safe note rendering, backups, and index refreshes. Codex handles the paper understanding: summarizing the problem, method, pipeline, experiments, limitations, and value for your research.
 
 There are two discovery paths, and their priority matters:
 
 - **Recommended Zotero-first path**: If the current Codex session has Zotero plugin or local API access, Codex should check Zotero readiness, search collections/items, inspect child attachments, retrieve local PDF paths, and use Zotero-indexed full text when available.
 - **Approved path-scan fallback**: If Zotero access is unavailable, disabled, ambiguous, cannot find the paper, cannot return a local PDF path, or cannot provide needed full text, Codex must ask before using the slower bundled Python scripts to scan or extract from the configured `zotero_attachment_root`.
 
-Codex should not scan the attachment directory if Zotero already provides a usable PDF path or indexed full text. The Python scripts are still responsible for this project's deterministic note workflow: config, approved path matching, PDF extraction fallback, mirrored output paths, HTML rendering, backups, and index refresh.
+Codex should not scan the attachment directory if Zotero already provides a usable PDF path or indexed full text. The Python scripts are still responsible for this project's deterministic note workflow: config, approved path matching, PDF extraction fallback, page rendering and figure cropping, mirrored output paths, HTML rendering, backups, and index refresh.
 
 ## Workflow Boundary
 
@@ -83,6 +84,8 @@ Full-text PDF extraction is optional but recommended. For `readpack` to extract 
 - `pdftotext`
 
 If none of these extractors is available, `readpack` still returns paper metadata, paths, and note targets, but sets `extraction_status: "no_extractor_available"`. Codex must not claim to have read the full PDF in that state.
+
+Architecture figure cropping is optional. It uses Poppler `pdfinfo`/`pdftoppm` plus Pillow when those tools are already available. Codex should first render and inspect the target page, then pass an explicit `--bbox x1,y1,x2,y2` to crop the final PNG.
 
 ## Skill Layout
 
@@ -342,9 +345,13 @@ The notes root is where generated files live:
     note_index.json
     scan_log.jsonl
     extracted_text/
+    visuals/
     note_payloads/
     backups/
   assets/
+    papers/
+      <safe_paper_id>/
+        images/
 ```
 
 For a PDF at:
@@ -393,7 +400,7 @@ Auto-Paper-Reader-for-Zotero supports progressive PDF reading:
 1. **Zotero-first mode**: Uses the Zotero plugin/local API for collections, item search, child attachments, local PDF paths, and Zotero-indexed full text.
 2. **Approved metadata-only fallback**: Works without third-party packages. Supports scanning, matching, mirrored note paths, note rendering, and index refresh.
 3. **Approved text-extraction fallback**: Uses an available extractor to produce full text for `readpack`.
-4. **Future advanced mode**: Structured parsers or OCR may be added later for figures, tables, equations, and scanned PDFs. These are not required or implemented in the current version.
+4. **Approved visual-cropping fallback**: Uses Poppler to render selected PDF pages and Pillow to crop inspected architecture figures into local note assets.
 
 If Zotero indexed full text fails with `404 Not Found`, that does not mean the HTML note workflow has failed. When Zotero can still provide a local PDF attachment path, `readpack --pdf-path` can extract text directly from that PDF without scanning the whole attachment root.
 

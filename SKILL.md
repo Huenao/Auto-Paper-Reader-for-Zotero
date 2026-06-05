@@ -22,8 +22,9 @@ python3 scripts/aprz.py find "Self-RAG"
 python3 scripts/aprz.py readpack "Self-RAG" --json
 python3 scripts/aprz.py readpack --pdf-path "/path/to/zotero/attachments/1.LLM/RAG/Self-RAG.pdf" --json
 python3 scripts/aprz.py note-path "Self-RAG" --json
-python3 scripts/aprz.py extract-visuals --paper-id "sha256:..." --json
-python3 scripts/aprz.py extract-visuals --pdf-path "/path/to/zotero/attachments/1.LLM/RAG/Self-RAG.pdf" --json
+python3 scripts/aprz.py extract-visuals --paper-id "sha256:..." --page 2 --render-page --json
+python3 scripts/aprz.py extract-visuals --paper-id "sha256:..." --page 2 --bbox "120,180,960,620" --label "图 1" --caption "Overall architecture." --linked-section method --json
+python3 scripts/aprz.py extract-visuals --pdf-path "/path/to/zotero/attachments/1.LLM/RAG/Self-RAG.pdf" --page 2 --bbox "120,180,960,620" --json
 python3 scripts/aprz.py render-note --paper-id "sha256:..." --payload "/tmp/note_payload.json"
 python3 scripts/aprz.py refresh-index
 ```
@@ -36,9 +37,9 @@ For a single Zotero-resolved attachment, prefer `index-pdf --pdf-path` instead o
 
 Full-text PDF extraction is optional: `readpack` tries tools already available in the environment in this order: `pypdf`, `pdfplumber`, then `pdftotext`.
 
-Visual extraction is optional: `extract-visuals` uses Docling only if it is already installed. It writes figure/table assets under `<notes_root>/assets/papers/<paper_id>/images/` and a JSON payload under `<notes_root>/data/visuals/`. If Docling is unavailable, it returns `visual_extraction_status: "no_visual_extractor_available"` and the note workflow should continue without images.
+Visual extraction is optional and Codex-guided: `extract-visuals` uses Poppler `pdfinfo`/`pdftoppm` to render a selected page and Pillow to crop an explicit `--bbox x1,y1,x2,y2` after the page has been inspected. It writes final cropped figure assets under `<notes_root>/assets/papers/<paper_id>/images/` and visual metadata under `<notes_root>/data/visuals/<paper_id>/visuals.json`. Use `--render-page` first when a page preview is needed before choosing the crop box.
 
-Do not install optional tooling such as `pytest`, PyYAML, Docling, `pypdf`, `pdfplumber`, or `pdftotext` without explicit user approval. Missing optional tools should degrade the workflow or be reported as an environment limitation.
+Do not install optional tooling such as `pytest`, PyYAML, Poppler, Pillow, `pypdf`, `pdfplumber`, or `pdftotext` without explicit user approval. Missing optional tools should degrade the workflow or be reported as an environment limitation.
 
 If no extractor is available, `readpack` returns `extraction_status: "no_extractor_available"`. Use metadata/path-only mode in that state and do not claim to have read the full PDF.
 
@@ -94,7 +95,7 @@ Keep Zotero as read-only for this skill. Enabling or restarting Zotero's local A
 
 Python fallback is allowed only when Zotero plugin/local API access is unavailable, Zotero Desktop is not running and the user does not want to enable/restart it, Zotero search cannot find the requested paper, Zotero finds the item but cannot return a local PDF attachment path, Zotero full text is unavailable and PDF text extraction is still needed, or Zotero returns ambiguous candidates and the user chooses attachment-root search instead.
 
-Before using `doctor`, `scan`, `find`, `readpack`, `note-path`, `index-pdf`, or `extract-visuals` for fallback access, stop and ask the user whether to use the Python attachment fallback. Explain the Zotero-first failure and name the intended command category, such as "index this Zotero-returned PDF path", "scan the configured attachment root", "build a reading pack from the local PDF", or "extract local figure/table assets." Once approved for that paper/task, run only the minimum necessary fallback commands.
+Before using `doctor`, `scan`, `find`, `readpack`, `note-path`, `index-pdf`, or `extract-visuals` for fallback access, stop and ask the user whether to use the Python attachment fallback. Explain the Zotero-first failure and name the intended command category, such as "index this Zotero-returned PDF path", "scan the configured attachment root", "build a reading pack from the local PDF", or "extract local figure assets." Once approved for that paper/task, run only the minimum necessary fallback commands.
 
 The scripts remain the deterministic layer for config, approved path scanning, matching, reading packs, mirrored note paths, note rendering, backups, and index refresh. `render-note` and `refresh-index` do not need a separate fallback-access approval after the paper/content has been resolved and the user asked to generate or update a note.
 
@@ -110,7 +111,7 @@ When the user asks to read a Zotero paper or generate a local paper note:
 6. If Zotero-first access fails and fallback discovery, PDF extraction, or visual extraction is needed, ask the user before running `doctor`, `scan`, `find`, `readpack`, `note-path`, `index-pdf`, or `extract-visuals`. After approval, run only the minimum necessary fallback commands.
 7. If extraction/full text is unavailable or failed, continue only with metadata/path-level evidence and state the limitation.
 8. When Zotero or the user provides a local PDF path for a specific paper, run `index-pdf --pdf-path` before rendering so the paper exists in `paper_index.json` without a full scan.
-9. Optionally run `extract-visuals` after PDF access has been approved or resolved. Inspect useful images before adding them to `visuals`; do not rely on captions alone.
+9. Optionally run `extract-visuals` after PDF access has been approved or resolved. For method architecture figures, locate the likely figure page from text/captions or user direction, run `extract-visuals --page N --render-page`, inspect the rendered page, then rerun with `--page N --bbox x1,y1,x2,y2`. Do not claim a figure was extracted unless the page or crop was inspected.
 10. Write a structured note payload following `references/note-writing-guide.md`. Use Markdown-like strings for better HTML note layout when helpful.
 11. Run `render-note` to write the standalone HTML note and refresh `note_index.json` and `index.html`. `render-note` does not run a full attachment scan.
 12. Report the note path, index path, validation performed, whether Zotero or approved Python fallback was used, and any extraction limitations.

@@ -51,6 +51,7 @@ def cmd_init(args) -> int:
 def cmd_doctor(args) -> int:
     cfg = _load(args)
     from extract_pdf import DEFAULT_EXTRACTORS
+    from extract_visuals import _poppler_tools
     import importlib.util
     import shutil
 
@@ -59,6 +60,7 @@ def cmd_doctor(args) -> int:
         "pdfplumber": bool(importlib.util.find_spec("pdfplumber")),
         "pdftotext": bool(shutil.which("pdftotext")),
     }
+    poppler = _poppler_tools()
     result = {
         "config_loaded": True,
         "zotero_attachment_root": str(cfg.zotero_attachment_root),
@@ -66,6 +68,11 @@ def cmd_doctor(args) -> int:
         "notes_root": str(cfg.notes_root),
         "notes_root_writable": cfg.notes_root.exists() and cfg.notes_root.is_dir(),
         "extractors": {key: tools.get(key, False) for key in DEFAULT_EXTRACTORS},
+        "visual_tools": {
+            "pdfinfo": bool(poppler.get("pdfinfo")),
+            "pdftoppm": bool(poppler.get("pdftoppm")),
+            "Pillow": bool(importlib.util.find_spec("PIL")),
+        },
     }
     _json(result)
     return 0 if result["zotero_attachment_root_readable"] and result["notes_root_writable"] else 2
@@ -137,9 +144,29 @@ def cmd_extract_visuals(args) -> int:
             "visuals": [],
         }
     elif args.paper_id:
-        result = extract_visuals_for_paper_id(_load(args), args.paper_id, image_scale=args.image_scale)
+        result = extract_visuals_for_paper_id(
+            _load(args),
+            args.paper_id,
+            page=args.page,
+            bbox=args.bbox,
+            label=args.label or "",
+            caption=args.caption or "",
+            linked_section=args.linked_section,
+            dpi=args.dpi,
+            render_page=args.render_page,
+        )
     elif args.pdf_path:
-        result = extract_visuals_for_pdf(_load(args), args.pdf_path, image_scale=args.image_scale)
+        result = extract_visuals_for_pdf(
+            _load(args),
+            args.pdf_path,
+            page=args.page,
+            bbox=args.bbox,
+            label=args.label or "",
+            caption=args.caption or "",
+            linked_section=args.linked_section,
+            dpi=args.dpi,
+            render_page=args.render_page,
+        )
     else:
         result = {
             "visual_extraction_status": "missing_visual_target",
@@ -147,7 +174,7 @@ def cmd_extract_visuals(args) -> int:
             "visuals": [],
         }
     _json(result)
-    return 0 if result.get("visual_extraction_status") in {"ok", "no_visuals_found", "no_visual_extractor_available"} else 2
+    return 0 if result.get("visual_extraction_status") in {"ok", "page_rendered", "no_visuals_found", "no_visual_extractor_available"} else 2
 
 
 def cmd_refresh_index(args) -> int:
@@ -199,10 +226,16 @@ def build_parser() -> argparse.ArgumentParser:
     render.add_argument("--payload", required=True)
     render.set_defaults(func=cmd_render_note)
 
-    visuals = sub.add_parser("extract-visuals", help="Optionally extract figure/table assets from a local Zotero PDF")
+    visuals = sub.add_parser("extract-visuals", help="Render/crop figure assets from a local Zotero PDF")
     visuals.add_argument("--paper-id", help="Paper id from paper_index.json")
     visuals.add_argument("--pdf-path", type=Path, help="Local PDF path under zotero_attachment_root")
-    visuals.add_argument("--image-scale", type=float, default=3.0, help="Docling image export scale")
+    visuals.add_argument("--page", type=int, help="1-based PDF page number to render or crop")
+    visuals.add_argument("--bbox", help="Crop box in rendered-page pixels: x1,y1,x2,y2")
+    visuals.add_argument("--label", help="Figure label, for example '图 1'")
+    visuals.add_argument("--caption", help="Figure caption to store in the note payload")
+    visuals.add_argument("--linked-section", default="method", help="Note section this visual supports")
+    visuals.add_argument("--dpi", type=int, default=200, help="Page render DPI for pdftoppm")
+    visuals.add_argument("--render-page", action="store_true", help="Render the selected page for inspection without cropping")
     visuals.add_argument("--json", action="store_true", help="Accepted for compatibility; output is always JSON")
     visuals.set_defaults(func=cmd_extract_visuals)
 

@@ -14,6 +14,7 @@ Zotero 仍然是论文、附件和元数据的来源。这个 Skill 把 Zotero P
 - 根据绝对路径、相对路径、文件名、文件名主体或标题片段匹配论文。
 - 为 Codex 构建 reading pack，辅助论文阅读和总结。
 - 使用当前环境中已经存在的 PDF 文本提取工具。
+- 使用 Poppler 渲染指定 PDF 页面，并用 Pillow 裁剪已经检查过的方法架构图，作为 HTML 笔记中的图证据。
 - 根据结构化 note payload 渲染中文技术 HTML 论文笔记，包含论文摘要区、元数据 chips、证据来源、目录、打开笔记和打开原 PDF。
 - 刷新静态 HTML 论文库 dashboard，支持搜索、状态筛选、研究分类、处理队列、可展开论文卡片、打开笔记和打开原 PDF。
 - 只写入配置好的 `notes_root`。
@@ -39,14 +40,14 @@ paper_index.json + reading pack
 本地 index.html 总索引
 ```
 
-脚本负责可重复、可验证的工作：读取配置、获准后的 PDF 发现兜底、计算镜像路径、提取文本、安全渲染笔记、备份旧笔记、刷新索引。Codex 负责论文理解：总结论文解决的问题、方法、流程、实验、局限性，以及这篇论文对你当前研究方向的价值。
+脚本负责可重复、可验证的工作：读取配置、获准后的 PDF 发现兜底、计算镜像路径、提取文本、页面渲染、图像裁剪、安全渲染笔记、备份旧笔记、刷新索引。Codex 负责论文理解：总结论文解决的问题、方法、流程、实验、局限性，以及这篇论文对你当前研究方向的价值。
 
 论文定位可以走两条路径，并且优先级很重要：
 
 - **推荐的 Zotero-first 路径**：如果当前 Codex 会话可以使用 Zotero 插件或 Zotero local API，Codex 应该先检查 Zotero 状态，查询 collection、搜索 Zotero 条目、查看子附件、获取本地 PDF 路径，并在可用时读取 Zotero 已索引全文。
 - **获准后的附件目录扫描兜底路径**：如果 Zotero 能力不可用、未启用、匹配结果不明确、找不到论文、无法返回本地 PDF 路径，或无法提供所需全文，Codex 必须先询问用户，才可以使用较慢的内置 Python 脚本扫描配置好的 `zotero_attachment_root` 或从 PDF 提取文本。
 
-如果 Zotero 已经提供可用的 PDF 路径或已索引全文，Codex 不应该再扫描附件目录。Python 脚本仍然负责这个项目自己的确定性笔记流程：配置读取、获准后的路径匹配、PDF 文本提取兜底、镜像输出路径、HTML 渲染、旧笔记备份和索引刷新。
+如果 Zotero 已经提供可用的 PDF 路径或已索引全文，Codex 不应该再扫描附件目录。Python 脚本仍然负责这个项目自己的确定性笔记流程：配置读取、获准后的路径匹配、PDF 文本提取兜底、页面渲染和图像裁剪、镜像输出路径、HTML 渲染、旧笔记备份和索引刷新。
 
 ## 工作边界
 
@@ -83,6 +84,8 @@ Codex 的 Zotero 插件或 Zotero local API 是首选访问路径。如果可用
 - `pdftotext`
 
 如果这些提取器都不可用，`readpack` 仍会返回论文元数据、路径和目标笔记位置，但会设置 `extraction_status: "no_extractor_available"`。在这种状态下，Codex 不应该声称已经阅读全文。
+
+方法架构图裁剪是可选能力。它使用当前环境中已经存在的 Poppler `pdfinfo`/`pdftoppm` 和 Pillow。Codex 应先渲染并检查目标页面，再传入明确的 `--bbox x1,y1,x2,y2` 裁剪最终 PNG。
 
 ## Skill 目录结构
 
@@ -342,9 +345,13 @@ AI 笔记根目录保存所有生成文件：
     note_index.json
     scan_log.jsonl
     extracted_text/
+    visuals/
     note_payloads/
     backups/
   assets/
+    papers/
+      <safe_paper_id>/
+        images/
 ```
 
 例如 PDF 位于：
@@ -393,7 +400,7 @@ Auto-Paper-Reader-for-Zotero 支持渐进式 PDF 读取：
 1. **Zotero-first 模式**：使用 Zotero 插件/local API 处理 collection、条目搜索、子附件、本地 PDF 路径和 Zotero 已索引全文。
 2. **获准后的元数据兜底模式**：不需要第三方包。支持扫描、匹配、镜像笔记路径、笔记渲染和索引刷新。
 3. **获准后的文本提取兜底模式**：使用当前环境中可用的提取器，为 `readpack` 生成正文文本。
-4. **未来高级模式**：后续可以考虑加入结构化解析器或 OCR，用于图表、表格、公式和扫描版 PDF。当前版本不要求也没有实现这些能力。
+4. **获准后的视觉裁剪兜底模式**：使用 Poppler 渲染指定 PDF 页面，并用 Pillow 把已检查过的方法架构图裁剪成本地笔记资源。
 
 如果 Zotero indexed full text 返回 `404 Not Found`，这不代表 HTML 笔记流程失败。只要 Zotero 仍然能提供本地 PDF 附件路径，`readpack --pdf-path` 就可以直接从该 PDF 提取正文，不需要扫描整个附件根目录。
 
