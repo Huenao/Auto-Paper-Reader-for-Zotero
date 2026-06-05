@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable
 
 from config import APRZConfig, data_dir, ensure_notes_layout
-from path_utils import path_to_file_href, require_within_root, safe_id_filename
+from path_utils import PathSafetyError, path_to_file_href, require_within_root, safe_id_filename
 from render_index import refresh_index, skill_root
 from scan_pdfs import load_paper_index, scan_pdfs
 
@@ -42,14 +43,70 @@ def _find_item(cfg: APRZConfig, paper_id: str) -> Dict[str, object]:
 
 def _render_list(values: Iterable[object]) -> str:
     items = [f"<li>{html.escape(str(value))}</li>" for value in values if str(value).strip()]
-    return "<ul>" + "".join(items) + "</ul>" if items else "<p></p>"
+    return '<ul class="note-list">' + "".join(items) + "</ul>" if items else "<p></p>"
 
 
 def _render_text(value: object) -> str:
     if isinstance(value, list):
         return _render_list(value)
-    paragraphs = [part.strip() for part in str(value or "").split("\n") if part.strip()]
-    return "".join(f"<p>{html.escape(part)}</p>" for part in paragraphs) or "<p></p>"
+    return _render_markdown_like(str(value or ""))
+
+
+def _render_markdown_like(text: str) -> str:
+    blocks = _split_blocks(text)
+    rendered = [_render_markdown_block(block) for block in blocks]
+    return "".join(block for block in rendered if block) or "<p></p>"
+
+
+def _split_blocks(text: str) -> list[list[str]]:
+    blocks: list[list[str]] = []
+    current: list[str] = []
+    for line in text.splitlines():
+        if line.strip():
+            current.append(line.rstrip())
+        elif current:
+            blocks.append(current)
+            current = []
+    if current:
+        blocks.append(current)
+    return blocks
+
+
+def _render_markdown_block(lines: list[str]) -> str:
+    stripped = [line.strip() for line in lines if line.strip()]
+    if not stripped:
+        return ""
+    if _is_table_block(stripped):
+        return _render_table(stripped)
+    if all(re.match(r"^[-*]\s+\S", line) for line in stripped):
+        items = [re.sub(r"^[-*]\s+", "", line) for line in stripped]
+        return _render_list(items)
+    if all(re.match(r"^\d+[.)]\s+\S", line) for line in stripped):
+        items = [re.sub(r"^\d+[.)]\s+", "", line) for line in stripped]
+        return '<ol class="note-list ordered">' + "".join(f"<li>{html.escape(item)}</li>" for item in items) + "</ol>"
+    if all(line.startswith(">") for line in stripped):
+        body = " ".join(line.lstrip(">").strip() for line in stripped)
+        return f'<blockquote class="note-callout"><p>{html.escape(body)}</p></blockquote>'
+    return "".join(f"<p>{html.escape(line)}</p>" for line in stripped)
+
+
+def _is_table_block(lines: list[str]) -> bool:
+    return (
+        len(lines) >= 2
+        and all(line.startswith("|") and line.endswith("|") for line in lines)
+        and all(set(cell.strip()) <= {"-", ":"} for cell in lines[1].strip("|").split("|"))
+    )
+
+
+def _render_table(lines: list[str]) -> str:
+    header = [cell.strip() for cell in lines[0].strip("|").split("|")]
+    rows = [[cell.strip() for cell in line.strip("|").split("|")] for line in lines[2:]]
+    head_html = "".join(f"<th>{html.escape(cell)}</th>" for cell in header)
+    row_html = []
+    for row in rows:
+        cells = row + [""] * max(0, len(header) - len(row))
+        row_html.append("<tr>" + "".join(f"<td>{html.escape(cell)}</td>" for cell in cells[: len(header)]) + "</tr>")
+    return '<table class="note-table"><thead><tr>' + head_html + "</tr></thead><tbody>" + "".join(row_html) + "</tbody></table>"
 
 
 def _plain_text(value: object) -> str:
@@ -98,6 +155,55 @@ def _first_nonempty(*values: object) -> str:
         if text:
             return text
     return ""
+
+
+def _render_visuals(cfg: APRZConfig, note_path: Path, visuals: object) -> str:
+    if not isinstance(visuals, list):
+        return ""
+    figures = []
+    for item in visuals:
+        if not isinstance(item, dict):
+            continue
+        figures.append(_render_visual_item(cfg, note_path, item))
+    body = "".join(figures)
+    if not body:
+        return ""
+    return '<section id="visuals" class="note-section visual-section"><h2>图表证据</h2>' + body + "</section>"
+
+
+def _render_visual_item(cfg: APRZConfig, note_path: Path, item: Dict[str, object]) -> str:
+    label = _first_nonempty(item.get("label"), item.get("label_original"), "图表")
+    caption = _first_nonempty(item.get("caption_zh"), item.get("caption"))
+    page = _first_nonempty(item.get("page"))
+    evidence = _first_nonempty(item.get("evidence_summary_zh"), item.get("evidence_summary"))
+    heading = html.escape(label)
+    if page:
+        heading += f'<span class="visual-page">p. {html.escape(page)}</span>'
+    asset_path = _safe_visual_href(cfg, note_path, item.get("asset_path"))
+    caption_text = caption or evidence or label
+    alt = html.escape(" ".join(part for part in [label, caption_text] if part))
+    if asset_path:
+        media = f'<img src="{asset_path}" alt="{alt}" loading="lazy">'
+    else:
+        media = '<div class="visual-missing">图片路径被安全策略跳过</div>'
+    details = ""
+    if caption:
+        details += f"<figcaption>{html.escape(caption)}</figcaption>"
+    if evidence:
+        details += f'<p class="visual-summary">{html.escape(evidence)}</p>'
+    return f'<figure class="paper-visual"><div class="visual-heading">{heading}</div>{media}{details}</figure>'
+
+
+def _safe_visual_href(cfg: APRZConfig, note_path: Path, asset_path: object) -> str:
+    if not asset_path:
+        return ""
+    try:
+        path = require_within_root(Path(str(asset_path)), cfg.notes_root)
+    except (PathSafetyError, RuntimeError):
+        return ""
+    if not path.exists() or not path.is_file():
+        return ""
+    return html.escape(_rel_href(note_path, path))
 
 
 def _validate_payload(payload: Dict[str, object]) -> None:
@@ -181,6 +287,7 @@ def render_note(cfg: APRZConfig, payload: Dict[str, object]) -> Dict[str, object
         "findings": _render_text(stored_payload.get("findings")),
         "limitations": _render_text(stored_payload.get("limitations")),
         "value_for_user": _render_text(stored_payload.get("value_for_user")),
+        "visuals_section": _render_visuals(cfg, note_path, stored_payload.get("visuals", [])),
         "next_action": _render_text(next_action),
         "follow_up_questions": _render_text(stored_payload.get("follow_up_questions", [])),
         "generated_at": timestamp,

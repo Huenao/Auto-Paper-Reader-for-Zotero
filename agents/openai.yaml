@@ -1,4 +1,4 @@
 interface:
   display_name: "AutoPaper Reader"
-  short_description: "Use Zotero first for HTML paper notes"
-  default_prompt: "Use $auto-paper-reader-for-zotero to locate/read my Zotero paper with the Zotero plugin first, then use approved Python fallback only if needed, and generate a local HTML paper note."
+  short_description: "Use Zotero first for rich HTML paper notes"
+  default_prompt: "Use $auto-paper-reader-for-zotero to locate/read my Zotero paper with the Zotero plugin first, then use approved Python fallback only if needed, and generate a local HTML paper note with structured sections and optional visual evidence."

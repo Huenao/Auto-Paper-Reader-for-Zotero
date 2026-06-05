@@ -8,6 +8,7 @@ from pathlib import Path
 
 from build_readpack import build_readpack, build_readpack_from_pdf_path
 from config import APRZConfig, ConfigError, ensure_notes_layout, load_config, save_global_config, save_project_config
+from extract_visuals import extract_visuals_for_paper_id, extract_visuals_for_pdf
 from match_paper import find_paper
 from render_index import refresh_index
 from render_note import render_note
@@ -122,6 +123,27 @@ def cmd_render_note(args) -> int:
     return 0
 
 
+def cmd_extract_visuals(args) -> int:
+    if args.paper_id and args.pdf_path:
+        result = {
+            "visual_extraction_status": "ambiguous_visual_request",
+            "message": "Use either --paper-id or --pdf-path, not both.",
+            "visuals": [],
+        }
+    elif args.paper_id:
+        result = extract_visuals_for_paper_id(_load(args), args.paper_id, image_scale=args.image_scale)
+    elif args.pdf_path:
+        result = extract_visuals_for_pdf(_load(args), args.pdf_path, image_scale=args.image_scale)
+    else:
+        result = {
+            "visual_extraction_status": "missing_visual_target",
+            "message": "Provide --paper-id or --pdf-path.",
+            "visuals": [],
+        }
+    _json(result)
+    return 0 if result.get("visual_extraction_status") in {"ok", "no_visuals_found", "no_visual_extractor_available"} else 2
+
+
 def cmd_refresh_index(args) -> int:
     _json(refresh_index(_load(args)))
     return 0
@@ -163,6 +185,13 @@ def build_parser() -> argparse.ArgumentParser:
     render.add_argument("--paper-id", required=False)
     render.add_argument("--payload", required=True)
     render.set_defaults(func=cmd_render_note)
+
+    visuals = sub.add_parser("extract-visuals", help="Optionally extract figure/table assets from a local Zotero PDF")
+    visuals.add_argument("--paper-id", help="Paper id from paper_index.json")
+    visuals.add_argument("--pdf-path", type=Path, help="Local PDF path under zotero_attachment_root")
+    visuals.add_argument("--image-scale", type=float, default=3.0, help="Docling image export scale")
+    visuals.add_argument("--json", action="store_true", help="Accepted for compatibility; output is always JSON")
+    visuals.set_defaults(func=cmd_extract_visuals)
 
     refresh = sub.add_parser("refresh-index", help="Refresh note_index.json and index.html")
     refresh.set_defaults(func=cmd_refresh_index)

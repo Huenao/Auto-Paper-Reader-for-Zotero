@@ -130,6 +130,38 @@ Allowed `source_resolution` values:
 - `query_match`: matched from `paper_index.json` using a title, filename, relative path, or fragment query.
 - `direct_pdf_path`: built directly from a local PDF path under `zotero_attachment_root`, usually after Zotero indexed full text failed but Zotero returned a local attachment path.
 
+## Visual Extraction
+
+`extract-visuals` returns optional local figure/table evidence. It must not be required for old notes.
+
+```json
+{
+  "visual_extraction_status": "ok",
+  "paper_id": "sha256:...",
+  "pdf_abs_path": "...",
+  "visuals_json_path": "<notes_root>/data/visuals/sha256....json",
+  "visuals": [
+    {
+      "label": "图 1",
+      "label_original": "Figure 1",
+      "caption": "Overall architecture.",
+      "caption_zh": "",
+      "page": 3,
+      "asset_path": "<notes_root>/assets/papers/sha256.../images/figure-001.png",
+      "image_scale": 3.0,
+      "visual_type": "figure",
+      "crop_status": "exported_with_docling",
+      "evidence_summary": "展示方法的两阶段处理流程。",
+      "linked_section": "method"
+    }
+  ]
+}
+```
+
+Allowed `visual_extraction_status`: `ok`, `no_visuals_found`, `no_visual_extractor_available`, `outside_attachment_root`, `pdf_not_found`, `not_pdf`, `failed`, `paper_not_found`.
+
+Only `asset_path` values inside `notes_root` should be rendered in notes. Outside paths must be skipped by the renderer.
+
 ## Note Payload
 
 Codex writes this JSON payload before `render-note`:
@@ -150,6 +182,7 @@ Codex writes this JSON payload before `render-note`:
   "findings": "...",
   "limitations": "...",
   "value_for_user": "...",
+  "visuals": [],
   "follow_up_questions": ["..."],
   "tags": [],
   "status": "read"
@@ -170,3 +203,23 @@ Optional Paper Vault-style display fields are supported:
 ```
 
 These optional fields improve the standalone note header and the local index dashboard. Do not make them mandatory; older payloads should continue to render with safe defaults.
+
+Optional `visuals` entries may be copied from `extract-visuals` output and edited by Codex after inspecting the images:
+
+```json
+{
+  "visuals": [
+    {
+      "label": "图 1",
+      "caption": "Overall architecture.",
+      "page": 3,
+      "asset_path": "/absolute/path/inside/notes_root/assets/papers/sha256.../images/figure-001.png",
+      "visual_type": "figure",
+      "evidence_summary": "图中把检索、生成和 critique 串成闭环，说明该方法不是单次 RAG 调用。",
+      "linked_section": "method"
+    }
+  ]
+}
+```
+
+Body text fields such as `problem`, `method_overview`, `pipeline`, `experiments`, `findings`, `limitations`, and `value_for_user` may use lightweight Markdown-like formatting inside strings: paragraphs, `-` bullets, `1.` ordered lists, `>` callouts, and simple pipe tables. The renderer escapes text before producing HTML.

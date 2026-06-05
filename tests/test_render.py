@@ -107,6 +107,94 @@ class RenderTests(unittest.TestCase):
             self.assertIn("PDF full text extraction", html)
             self.assertIn("Compare with ReAct and API-Bank.", html)
 
+    def test_render_note_supports_markdown_like_blocks_and_visuals(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "Vision" / "Paper.pdf"
+            pdf.parent.mkdir(parents=True)
+            pdf.write_bytes(b"%PDF")
+            index = scan_pdfs(cfg)
+            item = index["items"][0]
+            image = cfg.notes_root / "assets" / "papers" / "sha256-test" / "images" / "figure-001.png"
+            image.parent.mkdir(parents=True)
+            image.write_bytes(b"\x89PNG\r\n\x1a\n")
+
+            result = render_note(
+                cfg,
+                {
+                    "paper_id": item["paper_id"],
+                    "title": "Visual Paper",
+                    "summary": "带有结构化笔记和图表证据。",
+                    "problem": "- 问题一\n- 问题二",
+                    "method_overview": "> 关键直觉：先检测，再解释。\n\n方法分成两步。",
+                    "pipeline": "1. 提取候选图表\n2. 写入 HTML note",
+                    "experiments": "| 数据集 | 指标 |\n| --- | --- |\n| A | Accuracy |",
+                    "findings": "图表证据帮助复核结论。",
+                    "limitations": "视觉提取依赖本地工具。",
+                    "value_for_user": "更适合复习论文。",
+                    "visuals": [
+                        {
+                            "label": "图 1",
+                            "caption": "整体方法流程。",
+                            "page": 3,
+                            "asset_path": str(image),
+                            "visual_type": "figure",
+                            "evidence_summary": "展示检测和解释两个阶段。",
+                            "linked_section": "method",
+                        }
+                    ],
+                },
+            )
+
+            html = Path(result["note_abs_path"]).read_text()
+            self.assertIn('<ul class="note-list">', html)
+            self.assertIn('<ol class="note-list ordered">', html)
+            self.assertIn('<blockquote class="note-callout">', html)
+            self.assertIn('<table class="note-table">', html)
+            self.assertIn('<section id="visuals" class="note-section visual-section">', html)
+            self.assertIn('<figure class="paper-visual">', html)
+            self.assertIn('alt="图 1 整体方法流程。"', html)
+            self.assertIn("展示检测和解释两个阶段。", html)
+
+    def test_render_note_skips_visuals_outside_notes_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "Paper.pdf"
+            pdf.write_bytes(b"%PDF")
+            index = scan_pdfs(cfg)
+            item = index["items"][0]
+            outside = root / "outside.png"
+            outside.write_bytes(b"not really an image")
+
+            result = render_note(
+                cfg,
+                {
+                    "paper_id": item["paper_id"],
+                    "title": "Unsafe Visual",
+                    "summary": "测试外部图片路径。",
+                    "problem": "问题。",
+                    "method_overview": "方法。",
+                    "pipeline": "流程。",
+                    "experiments": "实验。",
+                    "findings": "发现。",
+                    "limitations": "限制。",
+                    "value_for_user": "价值。",
+                    "visuals": [
+                        {
+                            "label": "图 X",
+                            "caption": "外部图片。",
+                            "asset_path": str(outside),
+                        }
+                    ],
+                },
+            )
+
+            html = Path(result["note_abs_path"]).read_text()
+            self.assertIn("图片路径被安全策略跳过", html)
+            self.assertNotIn(str(outside), html)
+
     def test_refresh_index_contains_unread_and_search_assets(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
