@@ -9,7 +9,7 @@ Zotero stays the source of truth for papers, attachments, and metadata. This ski
 ## What It Does
 
 - Prefers the Codex Zotero plugin or Zotero local API to resolve collections, items, PDF attachments, local PDF paths, and indexed full text.
-- Uses slower Python attachment-root scanning only as an approved fallback when Zotero-first access cannot resolve the paper or content.
+- Uses local Python PDF extraction automatically for Zotero-returned PDF paths, while keeping whole-library attachment-root scanning as a confirmation-gated discovery fallback.
 - Builds `paper_index.json` with PDF paths, mirrored note paths, source status, and read status.
 - Matches papers by absolute path, relative path, filename, file stem, or title fragment.
 - Builds reading packs for Codex-assisted paper reading.
@@ -27,7 +27,8 @@ The skill separates deterministic file work from AI reading work.
 Zotero attachment root (read-only)
         |
         | Zotero plugin/local API first
-        | approved scan / match / extract fallback only if needed
+        | automatic local PDF read/crop when a path is known
+        | confirmed root scan only when discovery needs it
         v
 paper_index.json + reading pack
         |
@@ -40,14 +41,15 @@ standalone HTML note
 local index.html
 ```
 
-The scripts handle repeatable operations: config loading, approved fallback PDF discovery, path mirroring, text extraction, page rendering, figure cropping, safe note rendering, backups, and index refreshes. Codex handles the paper understanding: summarizing the problem, method, pipeline, experiments, limitations, and value for your research.
+The scripts handle repeatable operations: config loading, PDF discovery, path mirroring, text extraction, page rendering, figure cropping, safe note rendering, backups, and index refreshes. Codex handles the paper understanding: summarizing the problem, method, pipeline, experiments, limitations, and value for your research.
 
-There are two discovery paths, and their priority matters:
+There are three access routes, and their priority matters:
 
 - **Recommended Zotero-first path**: If the current Codex session has Zotero plugin or local API access, Codex should check Zotero readiness, search collections/items, inspect child attachments, retrieve local PDF paths, and use Zotero-indexed full text when available.
-- **Approved path-scan fallback**: If Zotero access is unavailable, disabled, ambiguous, cannot find the paper, cannot return a local PDF path, or cannot provide needed full text, Codex must ask before using the slower bundled Python scripts to scan or extract from the configured `zotero_attachment_root`.
+- **Local PDF fallback**: If Zotero returns a usable local PDF path but indexed full text is unavailable, Codex should automatically use bundled Python scripts to index, read, and crop evidence from that PDF.
+- **Confirmed path-scan fallback**: If Zotero cannot resolve a specific item/PDF path, Codex must ask before scanning or broadly searching the configured `zotero_attachment_root`.
 
-Codex should not scan the attachment directory if Zotero already provides a usable PDF path or indexed full text. The Python scripts are still responsible for this project's deterministic note workflow: config, approved path matching, PDF extraction fallback, page rendering and figure cropping, mirrored output paths, HTML rendering, backups, and index refresh.
+Codex should not scan the attachment directory if Zotero already provides a usable PDF path or indexed full text. The Python scripts are still responsible for this project's deterministic note workflow: config, path matching, PDF extraction fallback, page rendering and figure cropping, mirrored output paths, HTML rendering, backups, and index refresh.
 
 ## Workflow Boundary
 
@@ -73,9 +75,9 @@ Required:
 - Codex with Skills support.
 - Python 3.9 or newer.
 
-The core workflow uses Python standard library modules only. After fallback approval, it can scan PDFs, match papers, compute mirrored note paths, render HTML notes, and refresh the local index without installing third-party Python packages.
+The core workflow uses Python standard library modules only. For specific PDFs inside `zotero_attachment_root`, it can index PDFs, match papers, compute mirrored note paths, render HTML notes, and refresh the local index without installing third-party Python packages.
 
-A Codex Zotero plugin or Zotero local API access is the preferred access route. When available, use it before scanning the attachment root. The skill still works through the configured attachment root when Zotero-first access is not available or cannot resolve the needed PDF/content, but Codex should ask before using that slower Python fallback.
+A Codex Zotero plugin or Zotero local API access is the preferred access route. When available, use it before scanning the attachment root. The skill automatically uses configured-root local PDF extraction when Zotero returns a usable PDF path; it asks only before broad attachment-root scanning/search when no specific PDF path is known.
 
 Full-text PDF extraction is optional but recommended. For `readpack` to extract paper text, provide at least one of:
 
@@ -85,7 +87,7 @@ Full-text PDF extraction is optional but recommended. For `readpack` to extract 
 
 If none of these extractors is available, `readpack` still returns paper metadata, paths, and note targets, but sets `extraction_status: "no_extractor_available"`. Codex must not claim to have read the full PDF in that state.
 
-Architecture figure cropping is optional. It uses Poppler `pdfinfo`/`pdftoppm` plus Pillow when those tools are already available. Codex should first render and inspect the target page, then pass an explicit `--bbox x1,y1,x2,y2` to crop the final PNG.
+Architecture figure cropping is a normal HTML note step when visual tools are available. It uses Poppler `pdfinfo`/`pdftoppm` plus Pillow. Codex should first render and inspect the target page, then pass an explicit `--bbox x1,y1,x2,y2` to crop the final PNG; if no useful figure is found, the note should state that limitation.
 
 ## Skill Layout
 
@@ -132,7 +134,7 @@ Restart Codex after installation so the new skill is discovered.
 After restart, invoke it explicitly:
 
 ```text
-Use $auto-paper-reader-for-zotero to locate/read my Zotero paper with the Zotero plugin first, then use approved Python fallback only if needed, and generate a local HTML paper note.
+Use $auto-paper-reader-for-zotero to locate/read my Zotero paper with the Zotero plugin first, then automatically use local PDF extraction and visual cropping when needed, and generate a local HTML paper note.
 ```
 
 ## First-Time Setup
@@ -183,26 +185,26 @@ Save it as:
 
 ## Quickstart
 
-Check configuration and available PDF extraction tools. In normal paper lookup, Codex should run this as fallback only after Zotero-first access fails and you approve Python attachment-root access:
+Check configuration and available PDF/visual extraction tools:
 
 ```bash
 python3 scripts/aprz.py doctor
 ```
 
-Scan PDFs and refresh the index. Scanning is the slower fallback route for paper discovery, so Codex should ask before using it after Zotero-first failure:
+Scan PDFs and refresh the index. Scanning is the slower fallback route for root-level paper discovery, so Codex should ask before using it unless you explicitly request attachment-root indexing:
 
 ```bash
 python3 scripts/aprz.py scan
 python3 scripts/aprz.py refresh-index
 ```
 
-Find a paper. Prefer Zotero search first; use this fallback only after Zotero-first access fails and you approve it:
+Find a paper by attachment-root index. Prefer Zotero search first; use this broad fallback only after Zotero-first discovery fails or when you explicitly request root search:
 
 ```bash
 python3 scripts/aprz.py find "Attention Is All You Need"
 ```
 
-Build a reading pack for Codex. If Zotero-indexed full text is unavailable and PDF extraction is needed, Codex should ask before using this fallback:
+Build a reading pack for Codex from an indexed query. For a Zotero-returned local PDF path, prefer the direct `--pdf-path` form below:
 
 ```bash
 python3 scripts/aprz.py readpack "Attention Is All You Need" --json
@@ -315,7 +317,7 @@ Use $auto-paper-reader-for-zotero to refresh my paper index and show me which pa
 
 If multiple papers match a query, the skill should list candidates and ask you to choose instead of guessing.
 
-For paper lookup, Codex should try Zotero collections/items/attachments first. If it cannot get a usable local PDF path or indexed full text, it should explain the blocker and ask before using the slower Python fallback commands (`doctor`, `scan`, `find`, `readpack`, or `note-path`). Once the paper/content is resolved, `render-note` and `refresh-index` remain normal note-output commands.
+For paper lookup, Codex should try Zotero collections/items/attachments first. If Zotero returns a usable local PDF path, Codex should automatically run direct local PDF indexing, reading, and visual-cropping commands as needed. If it cannot get a usable local PDF path or indexed full text, it should explain the blocker and ask before broad attachment-root scanning/search. Once the paper/content is resolved, `render-note` and `refresh-index` remain normal note-output commands.
 
 ## Workspace And Output
 
@@ -398,13 +400,13 @@ See [references/metadata-schema.md](references/metadata-schema.md) for the gener
 Auto-Paper-Reader-for-Zotero supports progressive PDF reading:
 
 1. **Zotero-first mode**: Uses the Zotero plugin/local API for collections, item search, child attachments, local PDF paths, and Zotero-indexed full text.
-2. **Approved metadata-only fallback**: Works without third-party packages. Supports scanning, matching, mirrored note paths, note rendering, and index refresh.
-3. **Approved text-extraction fallback**: Uses an available extractor to produce full text for `readpack`.
-4. **Approved visual-cropping fallback**: Uses Poppler to render selected PDF pages and Pillow to crop inspected architecture figures into local note assets.
+2. **Local metadata fallback**: Works without third-party packages for specific PDFs inside `zotero_attachment_root`. Supports indexing, matching, mirrored note paths, note rendering, and index refresh.
+3. **Local text-extraction fallback**: Uses an available extractor to produce full text for `readpack`.
+4. **Local visual-cropping fallback**: Uses Poppler to render selected PDF pages and Pillow to crop inspected architecture figures into local note assets.
 
 If Zotero indexed full text fails with `404 Not Found`, that does not mean the HTML note workflow has failed. When Zotero can still provide a local PDF attachment path, `readpack --pdf-path` can extract text directly from that PDF without scanning the whole attachment root.
 
-After user approval for fallback PDF extraction, `readpack` tries text extractors already available in this order:
+For local PDF extraction, `readpack` tries text extractors already available in this order:
 
 1. `pypdf`
 2. `pdfplumber`

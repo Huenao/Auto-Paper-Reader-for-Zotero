@@ -155,7 +155,7 @@ When using `direct_pdf_path` for note generation, run `index-pdf --pdf-path` fir
 
 ## Visual Extraction
 
-`extract-visuals` returns optional local figure evidence cropped from a rendered PDF page. It must not be required for old notes.
+`extract-visuals` returns local figure evidence cropped from a rendered PDF page. New HTML note generation should attempt it when visual tools are available, but it must not be required for old notes or for papers where no useful figure is found.
 
 ```json
 {
@@ -231,7 +231,7 @@ Optional Paper Vault-style display fields are supported:
 
 These optional fields improve the standalone note header and the local index dashboard. Do not make them mandatory; older payloads should continue to render with safe defaults.
 
-Optional `visuals` entries may be copied from `extract-visuals` output and edited by Codex after inspecting the images:
+For new notes, `visuals` entries should be copied from `extract-visuals` output when a useful inspected crop exists, then edited by Codex after inspecting the images:
 
 ```json
 {

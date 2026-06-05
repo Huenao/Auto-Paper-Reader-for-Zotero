@@ -38,14 +38,14 @@ Every rendered note payload should cover:
 
 ## Visual Evidence
 
-Use `visuals` only when local visual extraction produced useful figure assets and the image was inspected or the limitation is explicitly stated.
+For new HTML paper notes, attempt method or architecture visual evidence when Poppler and Pillow are available. Use `visuals` only when local visual extraction produced useful figure assets and the image was inspected; otherwise state the limitation in `evidence_basis` when it matters for the note.
 
 - Keep `visuals[].asset_path` inside `notes_root`; outside paths are skipped by the renderer.
 - Prefer one to three high-value visuals over dumping every extracted figure.
 - Write `evidence_summary` as the insight the reader should take from the image, not just `图 1 展示了方法流程`.
 - Use `linked_section` to signal where the visual belongs: `method`, `pipeline`, `experiments`, `findings`, or `limitations`.
 - For method architecture figures, render and inspect the likely page first, then crop with an explicit bbox. Do not include the crop unless it was visually inspected.
-- If Poppler or Pillow is unavailable, omit `visuals` and state the limitation in `evidence_basis` only when relevant.
+- If Poppler or Pillow is unavailable, or no useful architecture figure is found after inspection, omit `visuals` and state the limitation in `evidence_basis` only when relevant.
 
 Example:
 

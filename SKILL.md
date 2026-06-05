@@ -1,6 +1,6 @@
 ---
 name: auto-paper-reader-for-zotero
-description: Use for Zotero-managed papers when Codex needs to locate or read Zotero PDFs, prefer the Codex Zotero plugin/local API for collections, items, attachments, local PDF paths, or indexed full text, and generate standalone Chinese HTML paper notes with a local static index. Use the bundled Python scripts only as an approved slow fallback for attachment-root scanning, matching, readpacks, and deterministic note rendering without modifying Zotero files.
+description: Use for Zotero-managed papers when Codex needs to locate or read Zotero PDFs, prefer the Codex Zotero plugin/local API for collections, items, attachments, local PDF paths, or indexed full text, and generate standalone Chinese HTML paper notes with a local static index. Use bundled Python scripts automatically for Zotero-returned local PDFs, configured-root PDF extraction, visual crops, readpacks, and deterministic note rendering without modifying Zotero files.
 ---
 
 # Auto-Paper-Reader-for-Zotero
@@ -37,7 +37,7 @@ For a single Zotero-resolved attachment, prefer `index-pdf --pdf-path` instead o
 
 Full-text PDF extraction is optional: `readpack` tries tools already available in the environment in this order: `pypdf`, `pdfplumber`, then `pdftotext`.
 
-Visual extraction is optional and Codex-guided: `extract-visuals` uses Poppler `pdfinfo`/`pdftoppm` to render a selected page and Pillow to crop an explicit `--bbox x1,y1,x2,y2` after the page has been inspected. It writes final cropped figure assets under `<notes_root>/assets/papers/<paper_id>/images/` and visual metadata under `<notes_root>/data/visuals/<paper_id>/visuals.json`. Use `--render-page` first when a page preview is needed before choosing the crop box.
+Visual extraction depends on optional tools but is a normal HTML note step when those tools are available: `extract-visuals` uses Poppler `pdfinfo`/`pdftoppm` to render a selected page and Pillow to crop an explicit `--bbox x1,y1,x2,y2` after the page has been inspected. It writes final cropped figure assets under `<notes_root>/assets/papers/<paper_id>/images/` and visual metadata under `<notes_root>/data/visuals/<paper_id>/visuals.json`. Use `--render-page` first when a page preview is needed before choosing the crop box.
 
 Do not install optional tooling such as `pytest`, PyYAML, Poppler, Pillow, `pypdf`, `pdfplumber`, or `pdftotext` without explicit user approval. Missing optional tools should degrade the workflow or be reported as an environment limitation.
 
@@ -52,7 +52,7 @@ python3 scripts/aprz.py readpack --pdf-path "/absolute/path/under/zotero_attachm
 
 This path must be inside the configured `zotero_attachment_root`. If it is outside, stop and report the rejection instead of reading arbitrary PDFs.
 
-For Zotero discovery/access, treat `doctor`, `scan`, `find`, `readpack`, `note-path`, `index-pdf`, and `extract-visuals` as Python fallback commands when they read or inspect local attachment PDFs. Use them only after Zotero-first access fails or after Zotero has already returned the local PDF path and the user approves the local PDF fallback for the current task. `render-note` and `refresh-index` are normal deterministic note-output commands after the paper/content has already been resolved.
+For Zotero discovery/access, use Python commands automatically when they operate on a specific Zotero-returned local PDF path or a user-provided PDF path inside `zotero_attachment_root`. Keep `scan` and broad `find` as fallback discovery commands only when Zotero-first discovery fails or the user asks to search the configured attachment root. `render-note` and `refresh-index` are normal deterministic note-output commands after the paper/content has already been resolved.
 
 ## References
 
@@ -88,16 +88,16 @@ Use the Zotero route first:
 - Inspect child attachments for the selected item.
 - Retrieve the local PDF file URL/path from Zotero when available.
 - Read Zotero-indexed full text when the user asks for paper contents and Zotero can provide it.
-- If indexed full text fails with 404 but Zotero returns a usable local PDF path, use `readpack --pdf-path` after user approval for PDF extraction fallback.
+- If indexed full text fails with 404 but Zotero returns a usable local PDF path, run `index-pdf --pdf-path` and `readpack --pdf-path` directly.
 - Do not run attachment-root scanning if Zotero already returns a usable PDF path or indexed full text.
 
 Keep Zotero as read-only for this skill. Enabling or restarting Zotero's local API, importing records, or writing to Zotero requires explicit user confirmation.
 
-Python fallback is allowed only when Zotero plugin/local API access is unavailable, Zotero Desktop is not running and the user does not want to enable/restart it, Zotero search cannot find the requested paper, Zotero finds the item but cannot return a local PDF attachment path, Zotero full text is unavailable and PDF text extraction is still needed, or Zotero returns ambiguous candidates and the user chooses attachment-root search instead.
+Automatic local PDF fallback is allowed when Zotero returns a local PDF path, the user provides a PDF path inside `zotero_attachment_root`, Zotero indexed full text is unavailable, or visual evidence is needed from that resolved PDF. Whole-library `scan` or broad attachment-root `find` remains a discovery fallback only when Zotero plugin/local API access is unavailable, Zotero Desktop is not running and the user does not want to enable/restart it, Zotero search cannot find the requested paper, Zotero finds the item but cannot return a local PDF attachment path, or Zotero returns ambiguous candidates and the user chooses attachment-root search instead.
 
-Before using `doctor`, `scan`, `find`, `readpack`, `note-path`, `index-pdf`, or `extract-visuals` for fallback access, stop and ask the user whether to use the Python attachment fallback. Explain the Zotero-first failure and name the intended command category, such as "index this Zotero-returned PDF path", "scan the configured attachment root", "build a reading pack from the local PDF", or "extract local figure assets." Once approved for that paper/task, run only the minimum necessary fallback commands.
+Before using whole-library `scan` or broad attachment-root `find`, stop and ask unless the user already requested root-level indexing/search. For a specific PDF path inside `zotero_attachment_root`, do not ask before running `doctor`, `index-pdf`, `readpack --pdf-path`, `note-path`, or `extract-visuals`; run only the minimum necessary commands and report which route was used.
 
-The scripts remain the deterministic layer for config, approved path scanning, matching, reading packs, mirrored note paths, note rendering, backups, and index refresh. `render-note` and `refresh-index` do not need a separate fallback-access approval after the paper/content has been resolved and the user asked to generate or update a note.
+The scripts remain the deterministic layer for config, path scanning, matching, reading packs, mirrored note paths, visual crops, note rendering, backups, and index refresh.
 
 ## Workflow
 
@@ -107,14 +107,14 @@ When the user asks to read a Zotero paper or generate a local paper note:
 2. Inspect the selected Zotero item's child attachments and retrieve a local PDF file URL/path when available.
 3. Use Zotero-indexed full text for paper contents when available and requested.
 4. If Zotero returns multiple plausible papers, show candidates and ask the user to choose. Do not guess.
-5. If Zotero indexed full text is unavailable or returns 404 but a local PDF path is available, ask before using `readpack --pdf-path` to extract from that PDF; do not scan the attachment root for discovery.
-6. If Zotero-first access fails and fallback discovery, PDF extraction, or visual extraction is needed, ask the user before running `doctor`, `scan`, `find`, `readpack`, `note-path`, `index-pdf`, or `extract-visuals`. After approval, run only the minimum necessary fallback commands.
+5. If Zotero indexed full text is unavailable or returns 404 but a local PDF path is available, run `index-pdf --pdf-path` and `readpack --pdf-path`; do not scan the attachment root for discovery.
+6. If Zotero-first discovery fails and root-level discovery is needed, ask before running whole-library `scan` or broad `find`. For a resolved local PDF path, continue automatically with the best available PDF/text route.
 7. If extraction/full text is unavailable or failed, continue only with metadata/path-level evidence and state the limitation.
 8. When Zotero or the user provides a local PDF path for a specific paper, run `index-pdf --pdf-path` before rendering so the paper exists in `paper_index.json` without a full scan.
-9. Optionally run `extract-visuals` after PDF access has been approved or resolved. For method architecture figures, locate the likely figure page from text/captions or user direction, run `extract-visuals --page N --render-page`, inspect the rendered page, then rerun with `--page N --bbox x1,y1,x2,y2`. Do not claim a figure was extracted unless the page or crop was inspected.
+9. Run `doctor` and attempt method architecture visual extraction when generating an HTML note. If visual tools are available, locate likely figure pages from user hints, captions, section text, or early method pages; run `extract-visuals --page N --render-page`, inspect the rendered page, then rerun with `--page N --bbox x1,y1,x2,y2`. Add useful crops to `visuals`; if no useful figure is found or tools are unavailable, state that limitation in `evidence_basis`.
 10. Write a structured note payload following `references/note-writing-guide.md`. Use Markdown-like strings for better HTML note layout when helpful.
 11. Run `render-note` to write the standalone HTML note and refresh `note_index.json` and `index.html`. `render-note` does not run a full attachment scan.
-12. Report the note path, index path, validation performed, whether Zotero or approved Python fallback was used, and any extraction limitations.
+12. Report the note path, index path, validation performed, which Zotero/indexed-text/local-PDF route was used, and any extraction limitations.
 
 ## Safety Rules
 
@@ -122,13 +122,13 @@ When the user asks to read a Zotero paper or generate a local paper note:
 - Do not read or modify Zotero SQLite.
 - Do not modify the Zotero library through plugin/API actions unless the user explicitly asks and confirms the exact write.
 - Do not silently switch from Zotero plugin/local API access to Python attachment-root scanning.
-- Ask before using `doctor`, `scan`, `find`, `readpack`, `note-path`, `index-pdf`, or `extract-visuals` as fallback access commands.
+- Ask before whole-library attachment-root scanning/search when no specific Zotero item or local PDF path is known.
 - Do not upload PDF contents unless the user explicitly asks and approves.
 - Write only inside `notes_root`; reject paths that escape through absolute paths, `..`, or symlinks.
 - Render note images only from paths inside `notes_root`; skip outside paths instead of embedding them.
 - Back up an existing HTML note inside `notes_root/data/backups/` before replacing it.
 - If a PDF disappears, mark it `source_missing`; do not delete the note.
-- Stop when config is missing, the target path is outside `notes_root`, Zotero-first access failed and fallback access has not been approved, a destructive Zotero operation is requested, or PDF extraction failed but the user asks for a full-text conclusion.
+- Stop when config is missing, the target path is outside `notes_root`, a local PDF path is outside `zotero_attachment_root`, a destructive Zotero operation is requested, or PDF extraction failed but the user asks for a full-text conclusion.
 
 ## Output Contract
 
