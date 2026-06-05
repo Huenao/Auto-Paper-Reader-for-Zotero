@@ -18,6 +18,7 @@ python3 scripts/aprz.py doctor
 python3 scripts/aprz.py scan
 python3 scripts/aprz.py find "Self-RAG"
 python3 scripts/aprz.py readpack "Self-RAG" --json
+python3 scripts/aprz.py readpack --pdf-path "/path/to/zotero/attachments/1.LLM/RAG/Self-RAG.pdf" --json
 python3 scripts/aprz.py note-path "Self-RAG" --json
 python3 scripts/aprz.py render-note --paper-id "sha256:..." --payload "/tmp/note_payload.json"
 python3 scripts/aprz.py refresh-index
@@ -26,6 +27,14 @@ python3 scripts/aprz.py refresh-index
 Core commands for scanning, matching, mirrored note paths, note rendering, and index refresh use Python standard library only. Full-text PDF extraction is optional: `readpack` tries tools already available in the environment in this order: `pypdf`, `pdfplumber`, then `pdftotext`.
 
 If no extractor is available, `readpack` returns `extraction_status: "no_extractor_available"`. Use metadata/path-only mode in that state and do not claim to have read the full PDF.
+
+If Zotero indexed full text returns 404 or is unavailable but Zotero returns a local PDF attachment path, prefer direct PDF readpack fallback:
+
+```text
+python3 scripts/aprz.py readpack --pdf-path "/absolute/path/under/zotero_attachment_root/Paper.pdf" --json
+```
+
+This path must be inside the configured `zotero_attachment_root`. If it is outside, stop and report the rejection instead of reading arbitrary PDFs.
 
 For Zotero discovery/access, treat `doctor`, `scan`, `find`, `readpack`, and `note-path` as slower Python fallback commands. Use them only after Zotero-first access fails and the user approves fallback for the current task. `render-note` and `refresh-index` are normal deterministic note-output commands after the paper/content has already been resolved.
 
@@ -63,6 +72,7 @@ Use the Zotero route first:
 - Inspect child attachments for the selected item.
 - Retrieve the local PDF file URL/path from Zotero when available.
 - Read Zotero-indexed full text when the user asks for paper contents and Zotero can provide it.
+- If indexed full text fails with 404 but Zotero returns a usable local PDF path, use `readpack --pdf-path` after user approval for PDF extraction fallback.
 - Do not run attachment-root scanning if Zotero already returns a usable PDF path or indexed full text.
 
 Keep Zotero as read-only for this skill. Enabling or restarting Zotero's local API, importing records, or writing to Zotero requires explicit user confirmation.
@@ -81,7 +91,7 @@ When the user asks to read a Zotero paper or generate a local paper note:
 2. Inspect the selected Zotero item's child attachments and retrieve a local PDF file URL/path when available.
 3. Use Zotero-indexed full text for paper contents when available and requested.
 4. If Zotero returns multiple plausible papers, show candidates and ask the user to choose. Do not guess.
-5. If Zotero provides a usable local PDF path or indexed full text, do not scan the attachment root for discovery.
+5. If Zotero indexed full text is unavailable or returns 404 but a local PDF path is available, ask before using `readpack --pdf-path` to extract from that PDF; do not scan the attachment root for discovery.
 6. If Zotero-first access fails and fallback discovery or PDF extraction is needed, ask the user before running `doctor`, `scan`, `find`, `readpack`, or `note-path`. After approval, run only the minimum necessary fallback commands.
 7. If extraction/full text is unavailable or failed, continue only with metadata/path-level evidence and state the limitation.
 8. Write a structured note payload following `references/note-writing-guide.md`.

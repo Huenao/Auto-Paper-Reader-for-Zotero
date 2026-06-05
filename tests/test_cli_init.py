@@ -23,6 +23,11 @@ class CliInitTests(unittest.TestCase):
         return pdf_root, notes_root
 
     def run_main_json(self, argv, cwd, home):
+        code, text = self.run_main(argv, cwd, home)
+        self.assertEqual(code, 0)
+        return json.loads(text)
+
+    def run_main(self, argv, cwd, home):
         previous_cwd = Path.cwd()
         buffer = io.StringIO()
         try:
@@ -32,8 +37,7 @@ class CliInitTests(unittest.TestCase):
                     code = main(argv)
         finally:
             os.chdir(previous_cwd)
-        self.assertEqual(code, 0)
-        return json.loads(buffer.getvalue())
+        return code, buffer.getvalue()
 
     def test_init_defaults_to_global_config_scope(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -86,6 +90,72 @@ class CliInitTests(unittest.TestCase):
             self.assertEqual(Path(result["config_path"]).resolve(), expected.resolve())
             self.assertTrue(expected.exists())
             self.assertFalse((home / ".config" / "auto-paper-reader-for-zotero" / "config.json").exists())
+
+    def test_readpack_accepts_direct_pdf_path_under_attachment_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pdf_root, notes_root = self.make_roots(root)
+            workspace = root / "workspace"
+            home = root / "home"
+            workspace.mkdir()
+            self.run_main_json(
+                [
+                    "init",
+                    "--scope",
+                    "project",
+                    "--zotero-attachment-root",
+                    str(pdf_root),
+                    "--notes-root",
+                    str(notes_root),
+                ],
+                cwd=workspace,
+                home=home,
+            )
+
+            result = self.run_main_json(
+                ["readpack", "--pdf-path", str(pdf_root / "Paper.pdf"), "--json"],
+                cwd=workspace,
+                home=home,
+            )
+
+            self.assertEqual(result["pdf_rel_path"], "Paper.pdf")
+            self.assertEqual(result["note_rel_path"], "Paper.html")
+            self.assertEqual(result["source_resolution"], "direct_pdf_path")
+
+    def test_readpack_rejects_direct_pdf_path_outside_attachment_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pdf_root, notes_root = self.make_roots(root)
+            outside = root / "outside" / "Other.pdf"
+            outside.parent.mkdir()
+            outside.write_bytes(b"%PDF")
+            workspace = root / "workspace"
+            home = root / "home"
+            workspace.mkdir()
+            self.run_main_json(
+                [
+                    "init",
+                    "--scope",
+                    "project",
+                    "--zotero-attachment-root",
+                    str(pdf_root),
+                    "--notes-root",
+                    str(notes_root),
+                ],
+                cwd=workspace,
+                home=home,
+            )
+
+            code, text = self.run_main(
+                ["readpack", "--pdf-path", str(outside), "--json"],
+                cwd=workspace,
+                home=home,
+            )
+            result = json.loads(text)
+
+            self.assertEqual(code, 2)
+            self.assertEqual(result["match_status"], "outside_attachment_root")
+            self.assertIn("outside zotero_attachment_root", result["message"])
 
 
 if __name__ == "__main__":

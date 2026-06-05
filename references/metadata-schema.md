@@ -112,6 +112,7 @@ Optional dashboard fields may also be present. They are display-only enhancement
   "sections": [],
   "full_text_path": "<notes_root>/data/extracted_text/sha256....txt",
   "extraction_status": "ok",
+  "source_resolution": "query_match",
   "recommended_reading_order": [
     "abstract",
     "introduction",
@@ -123,6 +124,11 @@ Optional dashboard fields may also be present. They are display-only enhancement
 ```
 
 Allowed `extraction_status`: `ok`, `partial`, `no_extractor_available`, `pdf_unreadable`, `failed`.
+
+Allowed `source_resolution` values:
+
+- `query_match`: matched from `paper_index.json` using a title, filename, relative path, or fragment query.
+- `direct_pdf_path`: built directly from a local PDF path under `zotero_attachment_root`, usually after Zotero indexed full text failed but Zotero returned a local attachment path.
 
 ## Note Payload
 

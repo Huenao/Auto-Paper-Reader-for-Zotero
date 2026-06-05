@@ -205,6 +205,16 @@ Build a reading pack for Codex. If Zotero-indexed full text is unavailable and P
 python3 scripts/aprz.py readpack "Attention Is All You Need" --json
 ```
 
+If Zotero indexed full text returns 404 but Zotero already gave Codex a local PDF attachment path, use the direct PDF fallback instead of rescanning or fuzzy matching:
+
+```bash
+python3 scripts/aprz.py readpack \
+  --pdf-path "/path/to/zotero/attachments/1.Foundations/Transformers/Attention Is All You Need.pdf" \
+  --json
+```
+
+The PDF path must be inside the configured `zotero_attachment_root`. The command refuses paths outside that root so the skill keeps the Zotero attachment boundary clear.
+
 Show the mirrored note path. If Zotero already supplied a usable PDF path, Codex should avoid fallback lookup unless it is needed for note output:
 
 ```bash
@@ -384,6 +394,8 @@ Auto-Paper-Reader-for-Zotero supports progressive PDF reading:
 2. **Approved metadata-only fallback**: Works without third-party packages. Supports scanning, matching, mirrored note paths, note rendering, and index refresh.
 3. **Approved text-extraction fallback**: Uses an available extractor to produce full text for `readpack`.
 4. **Future advanced mode**: Structured parsers or OCR may be added later for figures, tables, equations, and scanned PDFs. These are not required or implemented in the current version.
+
+If Zotero indexed full text fails with `404 Not Found`, that does not mean the HTML note workflow has failed. When Zotero can still provide a local PDF attachment path, `readpack --pdf-path` can extract text directly from that PDF without scanning the whole attachment root.
 
 After user approval for fallback PDF extraction, `readpack` tries text extractors already available in this order:
 

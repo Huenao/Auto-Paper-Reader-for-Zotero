@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from build_readpack import build_readpack
+from build_readpack import build_readpack, build_readpack_from_pdf_path
 from config import APRZConfig, ConfigError, ensure_notes_layout, load_config, save_global_config, save_project_config
 from match_paper import find_paper
 from render_index import refresh_index
@@ -81,7 +81,20 @@ def cmd_find(args) -> int:
 
 
 def cmd_readpack(args) -> int:
-    pack = build_readpack(_load(args), args.query)
+    if args.pdf_path and args.query:
+        pack = {
+            "match_status": "ambiguous_readpack_request",
+            "message": "Use either a query or --pdf-path, not both.",
+        }
+    elif args.pdf_path:
+        pack = build_readpack_from_pdf_path(_load(args), args.pdf_path)
+    elif args.query:
+        pack = build_readpack(_load(args), args.query)
+    else:
+        pack = {
+            "match_status": "missing_readpack_target",
+            "message": "Provide a query or --pdf-path.",
+        }
     _json(pack)
     return 0 if pack.get("match_status", "single_match") == "single_match" or "paper_id" in pack else 2
 
@@ -136,7 +149,8 @@ def build_parser() -> argparse.ArgumentParser:
     find.set_defaults(func=cmd_find)
 
     readpack = sub.add_parser("readpack", help="Build a reading pack for Codex")
-    readpack.add_argument("query")
+    readpack.add_argument("query", nargs="?")
+    readpack.add_argument("--pdf-path", type=Path, help="Build a readpack directly from a local PDF path under zotero_attachment_root")
     readpack.add_argument("--json", action="store_true", help="Accepted for compatibility; output is always JSON")
     readpack.set_defaults(func=cmd_readpack)
 

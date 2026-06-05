@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from build_readpack import build_readpack
+from build_readpack import build_readpack, build_readpack_from_pdf_path
 from config import APRZConfig
 from match_paper import find_paper
 from scan_pdfs import scan_pdfs
@@ -68,7 +68,40 @@ class ScanMatchReadpackTests(unittest.TestCase):
 
             self.assertEqual(pack["extraction_status"], "no_extractor_available")
             self.assertEqual(pack["pdf_rel_path"], "Paper.pdf")
+            self.assertEqual(pack["source_resolution"], "query_match")
             self.assertTrue(pack["note_abs_path"].endswith("Paper.html"))
+
+    def test_readpack_from_pdf_path_inside_attachment_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "1.LLM" / "RAG" / "Self-RAG.pdf"
+            pdf.parent.mkdir(parents=True)
+            pdf.write_bytes(b"%PDF")
+
+            pack = build_readpack_from_pdf_path(cfg, pdf, extractors=[])
+
+            self.assertEqual(pack["extraction_status"], "no_extractor_available")
+            self.assertEqual(pack["pdf_abs_path"], str(pdf.resolve()))
+            self.assertEqual(pack["pdf_rel_path"], "1.LLM/RAG/Self-RAG.pdf")
+            self.assertEqual(pack["note_rel_path"], "1.LLM/RAG/Self-RAG.html")
+            self.assertTrue(pack["note_abs_path"].endswith("1.LLM/RAG/Self-RAG.html"))
+            self.assertTrue(pack["full_text_path"].endswith(".txt"))
+            self.assertEqual(pack["title"], "Self RAG")
+
+    def test_readpack_from_pdf_path_rejects_path_outside_attachment_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            outside = root / "outside" / "Paper.pdf"
+            outside.parent.mkdir()
+            outside.write_bytes(b"%PDF")
+
+            pack = build_readpack_from_pdf_path(cfg, outside, extractors=[])
+
+            self.assertEqual(pack["match_status"], "outside_attachment_root")
+            self.assertIn("outside zotero_attachment_root", pack["message"])
+            self.assertEqual(pack["pdf_abs_path"], str(outside.resolve()))
 
 
 if __name__ == "__main__":

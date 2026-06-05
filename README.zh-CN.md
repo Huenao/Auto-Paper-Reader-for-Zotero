@@ -205,6 +205,16 @@ python3 scripts/aprz.py find "Attention Is All You Need"
 python3 scripts/aprz.py readpack "Attention Is All You Need" --json
 ```
 
+如果 Zotero indexed full text 返回 404，但 Zotero 已经给 Codex 返回了本地 PDF 附件路径，可以使用直接 PDF 兜底，而不是重新扫描或模糊匹配：
+
+```bash
+python3 scripts/aprz.py readpack \
+  --pdf-path "/path/to/zotero/attachments/1.Foundations/Transformers/Attention Is All You Need.pdf" \
+  --json
+```
+
+这个 PDF 路径必须位于配置好的 `zotero_attachment_root` 内。命令会拒绝 root 外路径，以保持 Zotero 附件边界清晰。
+
 查看镜像笔记路径。如果 Zotero 已经提供了可用 PDF 路径，Codex 应该避免额外兜底查找，除非生成笔记确实需要：
 
 ```bash
@@ -384,6 +394,8 @@ Auto-Paper-Reader-for-Zotero 支持渐进式 PDF 读取：
 2. **获准后的元数据兜底模式**：不需要第三方包。支持扫描、匹配、镜像笔记路径、笔记渲染和索引刷新。
 3. **获准后的文本提取兜底模式**：使用当前环境中可用的提取器，为 `readpack` 生成正文文本。
 4. **未来高级模式**：后续可以考虑加入结构化解析器或 OCR，用于图表、表格、公式和扫描版 PDF。当前版本不要求也没有实现这些能力。
+
+如果 Zotero indexed full text 返回 `404 Not Found`，这不代表 HTML 笔记流程失败。只要 Zotero 仍然能提供本地 PDF 附件路径，`readpack --pdf-path` 就可以直接从该 PDF 提取正文，不需要扫描整个附件根目录。
 
 在用户同意 PDF 提取兜底后，`readpack` 会按顺序尝试当前环境已经可用的文本提取工具：
 
