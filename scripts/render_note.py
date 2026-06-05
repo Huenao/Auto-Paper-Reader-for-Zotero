@@ -12,7 +12,7 @@ from typing import Dict, Iterable
 from config import APRZConfig, data_dir, ensure_notes_layout
 from path_utils import PathSafetyError, path_to_file_href, require_within_root, safe_id_filename
 from render_index import refresh_index, skill_root
-from scan_pdfs import load_paper_index, scan_pdfs
+from scan_pdfs import load_paper_index
 
 
 REQUIRED_PAYLOAD_FIELDS = [
@@ -298,7 +298,6 @@ def render_note(cfg: APRZConfig, payload: Dict[str, object]) -> Dict[str, object
         html_text = html_text.replace("{{ " + key + " }}", str(value))
     note_path.write_text(html_text)
 
-    scan_pdfs(cfg)
     index_result = refresh_index(cfg)
     return {
         "note_abs_path": str(note_path),

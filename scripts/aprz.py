@@ -12,7 +12,7 @@ from extract_visuals import extract_visuals_for_paper_id, extract_visuals_for_pd
 from match_paper import find_paper
 from render_index import refresh_index
 from render_note import render_note
-from scan_pdfs import scan_pdfs
+from scan_pdfs import index_pdf_path, scan_pdfs
 
 
 def _json(data: object) -> None:
@@ -72,8 +72,14 @@ def cmd_doctor(args) -> int:
 
 
 def cmd_scan(args) -> int:
-    _json(scan_pdfs(_load(args)))
+    _json(scan_pdfs(_load(args), force_hash=args.force_hash))
     return 0
+
+
+def cmd_index_pdf(args) -> int:
+    result = index_pdf_path(_load(args), args.pdf_path, force_hash=args.force_hash)
+    _json(result)
+    return 0 if result.get("match_status") == "single_match" else 2
 
 
 def cmd_find(args) -> int:
@@ -164,7 +170,14 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.set_defaults(func=cmd_doctor)
 
     scan = sub.add_parser("scan", help="Scan PDFs and write paper_index.json")
+    scan.add_argument("--force-hash", action="store_true", help="Recompute content hashes even when file size and mtime are unchanged")
     scan.set_defaults(func=cmd_scan)
+
+    index_pdf = sub.add_parser("index-pdf", help="Index a single local Zotero PDF path without scanning the whole attachment root")
+    index_pdf.add_argument("--pdf-path", type=Path, required=True, help="Local PDF path under zotero_attachment_root")
+    index_pdf.add_argument("--force-hash", action="store_true", help="Recompute the content hash even if unchanged in the existing index")
+    index_pdf.add_argument("--json", action="store_true", help="Accepted for compatibility; output is always JSON")
+    index_pdf.set_defaults(func=cmd_index_pdf)
 
     find = sub.add_parser("find", help="Find a paper by path, filename, or title fragment")
     find.add_argument("query")

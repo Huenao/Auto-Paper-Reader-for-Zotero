@@ -1,15 +1,18 @@
 import json
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
+import scan_pdfs as scan_module
 from build_readpack import build_readpack, build_readpack_from_pdf_path
 from config import APRZConfig
 from match_paper import find_paper
-from scan_pdfs import scan_pdfs
+from scan_pdfs import index_pdf_path, scan_pdfs
 
 
 class ScanMatchReadpackTests(unittest.TestCase):
@@ -37,6 +40,95 @@ class ScanMatchReadpackTests(unittest.TestCase):
             second = scan_pdfs(cfg)
             self.assertEqual(second["summary"]["source_missing"], 1)
             self.assertEqual(second["items"][0]["source_status"], "source_missing")
+
+    def test_scan_reuses_fingerprint_for_unchanged_pdf(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "Paper.pdf"
+            pdf.write_bytes(b"%PDF")
+            first = scan_pdfs(cfg)
+            original_id = first["items"][0]["paper_id"]
+
+            with patch.object(scan_module, "sha256_file", side_effect=AssertionError("should not rehash unchanged PDF")):
+                second = scan_pdfs(cfg)
+
+            self.assertEqual(second["items"][0]["paper_id"], original_id)
+            self.assertEqual(second["items"][0]["content_fingerprint"], original_id)
+
+    def test_scan_rehashes_changed_pdf(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "Paper.pdf"
+            pdf.write_bytes(b"%PDF")
+            scan_pdfs(cfg)
+            pdf.write_bytes(b"%PDF changed")
+            os.utime(pdf, None)
+
+            with patch.object(scan_module, "sha256_file", return_value="sha256:changed") as digest:
+                second = scan_pdfs(cfg)
+
+            digest.assert_called_once_with(pdf)
+            self.assertEqual(second["items"][0]["paper_id"], "sha256:changed")
+
+    def test_scan_force_hash_rehashes_unchanged_pdf(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "Paper.pdf"
+            pdf.write_bytes(b"%PDF")
+            scan_pdfs(cfg)
+
+            with patch.object(scan_module, "sha256_file", return_value="sha256:forced") as digest:
+                second = scan_pdfs(cfg, force_hash=True)
+
+            digest.assert_called_once_with(pdf)
+            self.assertEqual(second["items"][0]["paper_id"], "sha256:forced")
+
+    def test_index_pdf_path_updates_only_one_pdf(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            first = cfg.zotero_attachment_root / "A.pdf"
+            second = cfg.zotero_attachment_root / "B.pdf"
+            first.write_bytes(b"%PDF A")
+            second.write_bytes(b"%PDF B")
+            scan_pdfs(cfg)
+            first.unlink()
+
+            result = index_pdf_path(cfg, second)
+            index = scan_module.load_paper_index(cfg)
+
+            self.assertEqual(result["match_status"], "single_match")
+            self.assertEqual(result["pdf_rel_path"], "B.pdf")
+            self.assertEqual(len(index["items"]), 2)
+            self.assertEqual([item["pdf_rel_path"] for item in index["items"]], ["A.pdf", "B.pdf"])
+            self.assertEqual(index["items"][0]["source_status"], "available")
+
+    def test_index_pdf_path_rejects_path_outside_attachment_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            outside = root / "outside" / "Paper.pdf"
+            outside.parent.mkdir()
+            outside.write_bytes(b"%PDF")
+
+            result = index_pdf_path(cfg, outside)
+
+            self.assertEqual(result["match_status"], "outside_attachment_root")
+            self.assertIn("outside zotero_attachment_root", result["message"])
+
+    def test_index_pdf_path_rejects_non_pdf(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            text = cfg.zotero_attachment_root / "Paper.txt"
+            text.write_text("not a pdf")
+
+            result = index_pdf_path(cfg, text)
+
+            self.assertEqual(result["match_status"], "not_pdf")
 
     def test_match_exact_fuzzy_and_multiple_candidates(self):
         with tempfile.TemporaryDirectory() as tmp:

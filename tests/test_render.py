@@ -3,9 +3,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
+import render_note as render_note_module
 from config import APRZConfig
 from render_index import refresh_index
 from render_note import render_note
@@ -106,6 +108,34 @@ class RenderTests(unittest.TestCase):
             self.assertIn("fulltext-read", html)
             self.assertIn("PDF full text extraction", html)
             self.assertIn("Compare with ReAct and API-Bank.", html)
+
+    def test_render_note_does_not_run_full_scan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cfg = self.make_config(root)
+            pdf = cfg.zotero_attachment_root / "Paper.pdf"
+            pdf.write_bytes(b"%PDF")
+            index = scan_pdfs(cfg)
+            item = index["items"][0]
+
+            with patch.object(render_note_module, "scan_pdfs", side_effect=AssertionError("render-note should not scan all PDFs"), create=True):
+                result = render_note(
+                    cfg,
+                    {
+                        "paper_id": item["paper_id"],
+                        "title": "Paper",
+                        "summary": "单篇渲染不应全量扫描。",
+                        "problem": "问题。",
+                        "method_overview": "方法。",
+                        "pipeline": "流程。",
+                        "experiments": "实验。",
+                        "findings": "发现。",
+                        "limitations": "限制。",
+                        "value_for_user": "价值。",
+                    },
+                )
+
+            self.assertTrue(Path(result["note_abs_path"]).exists())
 
     def test_render_note_supports_markdown_like_blocks_and_visuals(self):
         with tempfile.TemporaryDirectory() as tmp:

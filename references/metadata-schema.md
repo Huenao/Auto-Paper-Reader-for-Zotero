@@ -58,6 +58,27 @@ Required item fields:
 - `tags`
 - `source_status`: `available` or `source_missing`
 
+`scan` is incremental by default. If an existing item has the same `pdf_rel_path`, `file_size`, and `modified_at`, the scanner reuses `content_fingerprint` and `paper_id` instead of reading the whole PDF again. `scan --force-hash` recomputes all PDF fingerprints.
+
+## Single PDF Indexing
+
+`index-pdf --pdf-path <path>` updates one local Zotero PDF in `paper_index.json` without scanning the full attachment root. The path must be inside `zotero_attachment_root`.
+
+Success returns the updated paper item plus:
+
+```json
+{
+  "match_status": "single_match",
+  "paper_id": "sha256:...",
+  "pdf_abs_path": "...",
+  "pdf_rel_path": "1.LLM/RAG/Self-RAG.pdf",
+  "note_rel_path": "1.LLM/RAG/Self-RAG.html",
+  "note_abs_path": "<notes_root>/1.LLM/RAG/Self-RAG.html"
+}
+```
+
+Failure `match_status` values include `outside_attachment_root`, `pdf_not_found`, and `not_pdf`.
+
 ## note_index.json
 
 Stored at `<notes_root>/data/note_index.json` and embedded into `<notes_root>/index.html`.
@@ -129,6 +150,8 @@ Allowed `source_resolution` values:
 
 - `query_match`: matched from `paper_index.json` using a title, filename, relative path, or fragment query.
 - `direct_pdf_path`: built directly from a local PDF path under `zotero_attachment_root`, usually after Zotero indexed full text failed but Zotero returned a local attachment path.
+
+When using `direct_pdf_path` for note generation, run `index-pdf --pdf-path` first if the paper is not already present in `paper_index.json`.
 
 ## Visual Extraction
 

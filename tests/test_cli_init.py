@@ -157,6 +157,38 @@ class CliInitTests(unittest.TestCase):
             self.assertEqual(result["match_status"], "outside_attachment_root")
             self.assertIn("outside zotero_attachment_root", result["message"])
 
+    def test_index_pdf_accepts_direct_pdf_path_under_attachment_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pdf_root, notes_root = self.make_roots(root)
+            workspace = root / "workspace"
+            home = root / "home"
+            workspace.mkdir()
+            self.run_main_json(
+                [
+                    "init",
+                    "--scope",
+                    "project",
+                    "--zotero-attachment-root",
+                    str(pdf_root),
+                    "--notes-root",
+                    str(notes_root),
+                ],
+                cwd=workspace,
+                home=home,
+            )
+
+            result = self.run_main_json(
+                ["index-pdf", "--pdf-path", str(pdf_root / "Paper.pdf"), "--json"],
+                cwd=workspace,
+                home=home,
+            )
+
+            self.assertEqual(result["match_status"], "single_match")
+            self.assertEqual(result["pdf_rel_path"], "Paper.pdf")
+            self.assertEqual(result["note_rel_path"], "Paper.html")
+            self.assertTrue(result["note_abs_path"].endswith("Paper.html"))
+
 
 if __name__ == "__main__":
     unittest.main()
