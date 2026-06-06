@@ -36,14 +36,25 @@ Every rendered note payload should cover:
 - Keep optional dashboard fields concise; they are for scanning and filtering the local HTML index, not for replacing the full note sections.
 - Leave optional fields absent when uncertain. The renderer provides defaults and old payloads remain valid.
 
+## Reproducibility Resources
+
+Add optional `resources` only for code, project, dataset, benchmark, or model links that are explicitly visible in the paper text/readpack or supplied by the user. Do not search the web or guess links from paper titles.
+
+- Use `type` values: `code`, `project`, `dataset`, `benchmark`, `model`, or `other`.
+- Use `source` to cite where the link came from, such as `abstract footnote`, `method section`, `experiments section`, `appendix`, or `user provided`.
+- Use `note` to explain what the resource is for, such as `官方代码实现`, `训练数据下载页`, or `评测 benchmark 页面`.
+- If a dataset is named but no URL is provided, mention the dataset in `experiments`; do not add a `resources` entry.
+- Omit `resources` entirely when no explicit links are available.
+
 ## Visual Evidence
 
 For new HTML paper notes, attempt method or architecture visual evidence when Poppler and Pillow are available. Use `visuals` only when local visual extraction produced useful figure assets and the image was inspected; otherwise state the limitation in `evidence_basis` when it matters for the note.
 
 - Keep `visuals[].asset_path` inside `notes_root`; outside paths are skipped by the renderer.
 - Prefer one to three high-value visuals over dumping every extracted figure.
-- Write `evidence_summary` as the insight the reader should take from the image, not just `图 1 展示了方法流程`.
-- Use `linked_section` to signal where the visual belongs: `method`, `pipeline`, `experiments`, `findings`, or `limitations`.
+- Write `evidence_summary` as the insight the reader should take from the image and how it supports the nearby section text, not just `图 1 展示了方法流程`.
+- Use `linked_section` to control where the visual is embedded: `method`, `pipeline`, `experiments`, `findings`, or `limitations`. Unknown or missing values are rendered in a final "其他图表证据" section.
+- For method architecture figures, prefer `linked_section: "method"` when the image explains components or design rationale, and `linked_section: "pipeline"` when it explains execution flow.
 - For method architecture figures, render and inspect the likely page first, then crop with an explicit bbox. Do not include the crop unless it was visually inspected.
 - If Poppler or Pillow is unavailable, or no useful architecture figure is found after inspection, omit `visuals` and state the limitation in `evidence_basis` only when relevant.
 

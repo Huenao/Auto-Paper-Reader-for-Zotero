@@ -112,10 +112,11 @@ When the user asks to read a Zotero paper or generate a local paper note:
 6. If Zotero-first discovery fails and root-level discovery is needed, ask before running whole-library `scan` or broad `find`. For a resolved local PDF path, continue automatically with the best available PDF/text route.
 7. If extraction/full text is unavailable or failed, continue only with metadata/path-level evidence and state the limitation.
 8. When Zotero or the user provides a local PDF path for a specific paper, run `index-pdf --pdf-path` before rendering so the paper exists in `paper_index.json` without a full scan.
-9. Run `doctor` and attempt method architecture visual extraction when generating an HTML note. If visual tools are available, locate likely figure pages from user hints, captions, section text, or early method pages; run `extract-visuals --page N --render-page`, inspect the rendered page, then rerun with `--page N --bbox x1,y1,x2,y2`. Add useful crops to `visuals`; if no useful figure is found or tools are unavailable, state that limitation in `evidence_basis`.
-10. Write a structured note payload following `references/note-writing-guide.md`. Use Markdown-like strings for better HTML note layout when helpful.
-11. Run `render-note` to write the standalone HTML note and refresh `note_index.json` and `index.html`. `render-note` does not run a full attachment scan.
-12. Report the note path, index path, validation performed, which Zotero/indexed-text/local-PDF route was used, and any extraction limitations.
+9. Run `doctor` and attempt method architecture visual extraction when generating an HTML note. If visual tools are available, locate likely figure pages from user hints, captions, section text, or early method pages; run `extract-visuals --page N --render-page`, inspect the rendered page, then rerun with `--page N --bbox x1,y1,x2,y2`. Add useful crops to `visuals` with `linked_section` set to the section the image explains, usually `method` or `pipeline` for architecture figures, so `render-note` embeds the image next to the matching text. If no useful figure is found or tools are unavailable, state that limitation in `evidence_basis`.
+10. Before writing the note payload, scan the readpack text for explicit reproducibility links such as URLs, GitHub, Hugging Face, project pages, datasets, benchmarks, supplementary pages, or "code available" notes. Add only paper-visible or user-provided links to optional `resources`; do not search the web or guess missing code/data links.
+11. Write a structured note payload following `references/note-writing-guide.md`. Use Markdown-like strings for better HTML note layout when helpful.
+12. Run `render-note` to write the standalone HTML note and refresh `note_index.json` and `index.html`. `render-note` does not run a full attachment scan.
+13. Report the note path, index path, validation performed, which Zotero/indexed-text/local-PDF route was used, and any extraction limitations.
 
 ## Safety Rules
 

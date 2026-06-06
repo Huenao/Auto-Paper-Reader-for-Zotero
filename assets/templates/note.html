@@ -42,23 +42,25 @@
         <a href="#problem">论文解决的问题</a>
         <a href="#method">方法概览</a>
         <a href="#pipeline">方法 Pipeline</a>
+        {{ resources_toc_link }}
         <a href="#innovations">关键创新点</a>
         <a href="#experiments">实验设置</a>
         <a href="#findings">主要结论</a>
         <a href="#limitations">局限性</a>
         <a href="#value">对当前研究的价值</a>
-        <a href="#visuals">图表证据</a>
+        {{ visuals_toc_link }}
         <a href="#questions">后续可追问问题</a>
       </aside>
 
       <article class="note-sections">
         <section id="problem" class="note-section"><h2>论文解决的问题</h2>{{ problem }}</section>
-        <section id="method" class="note-section"><h2>方法概览</h2>{{ method_overview }}</section>
-        <section id="pipeline" class="note-section"><h2>方法 Pipeline</h2>{{ pipeline }}</section>
+        <section id="method" class="note-section"><h2>方法概览</h2>{{ method_overview }}{{ method_visuals }}</section>
+        <section id="pipeline" class="note-section"><h2>方法 Pipeline</h2>{{ pipeline }}{{ pipeline_visuals }}</section>
+        {{ resources_section }}
         <section id="innovations" class="note-section"><h2>关键创新点</h2>{{ innovations }}</section>
-        <section id="experiments" class="note-section"><h2>实验设置</h2>{{ experiments }}</section>
-        <section id="findings" class="note-section"><h2>主要结论</h2>{{ findings }}</section>
-        <section id="limitations" class="note-section"><h2>局限性</h2>{{ limitations }}</section>
+        <section id="experiments" class="note-section"><h2>实验设置</h2>{{ experiments }}{{ experiments_visuals }}</section>
+        <section id="findings" class="note-section"><h2>主要结论</h2>{{ findings }}{{ findings_visuals }}</section>
+        <section id="limitations" class="note-section"><h2>局限性</h2>{{ limitations }}{{ limitations_visuals }}</section>
         <section id="value" class="note-section"><h2>对当前研究的价值</h2>{{ value_for_user }}</section>
         {{ visuals_section }}
         <section id="questions" class="note-section"><h2>后续可追问问题</h2>{{ follow_up_questions }}</section>

@@ -8,6 +8,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable
+from urllib.parse import urlparse
 
 from config import APRZConfig, data_dir, ensure_notes_layout
 from path_utils import PathSafetyError, path_to_file_href, require_within_root, safe_id_filename
@@ -157,18 +158,94 @@ def _first_nonempty(*values: object) -> str:
     return ""
 
 
-def _render_visuals(cfg: APRZConfig, note_path: Path, visuals: object) -> str:
+VISUAL_SECTION_KEYS = {"method", "pipeline", "experiments", "findings", "limitations"}
+
+
+def _render_visual_groups(cfg: APRZConfig, note_path: Path, visuals: object) -> Dict[str, str]:
+    groups = {key: "" for key in VISUAL_SECTION_KEYS}
+    groups["other"] = ""
     if not isinstance(visuals, list):
-        return ""
-    figures = []
+        return groups
     for item in visuals:
         if not isinstance(item, dict):
             continue
-        figures.append(_render_visual_item(cfg, note_path, item))
-    body = "".join(figures)
+        linked_section = str(item.get("linked_section") or "").strip().casefold()
+        target = linked_section if linked_section in VISUAL_SECTION_KEYS else "other"
+        groups[target] += _render_visual_item(cfg, note_path, item)
+    return groups
+
+
+def _render_other_visuals(body: str) -> str:
     if not body:
         return ""
-    return '<section id="visuals" class="note-section visual-section"><h2>图表证据</h2>' + body + "</section>"
+    return '<section id="visuals" class="note-section visual-section"><h2>其他图表证据</h2>' + body + "</section>"
+
+
+def _render_visual_toc_link(other_visuals_section: str) -> str:
+    if not other_visuals_section:
+        return ""
+    return '<a href="#visuals">其他图表证据</a>'
+
+
+RESOURCE_TYPE_LABELS = {
+    "code": "代码",
+    "project": "项目页",
+    "dataset": "数据集",
+    "benchmark": "Benchmark",
+    "model": "模型",
+    "other": "其他",
+}
+
+
+def _render_resources(resources: object) -> str:
+    if not isinstance(resources, list):
+        return ""
+    items = []
+    for item in resources:
+        if not isinstance(item, dict):
+            continue
+        rendered = _render_resource_item(item)
+        if rendered:
+            items.append(rendered)
+    if not items:
+        return ""
+    return '<section id="resources" class="note-section resource-section"><h2>开源与数据资源</h2><div class="resource-list">' + "".join(items) + "</div></section>"
+
+
+def _render_resources_toc_link(resources_section: str) -> str:
+    if not resources_section:
+        return ""
+    return '<a href="#resources">开源与数据资源</a>'
+
+
+def _render_resource_item(item: Dict[str, object]) -> str:
+    href = _safe_resource_href(item.get("url"))
+    if not href:
+        return ""
+    label = _first_nonempty(item.get("label"), item.get("url"), "资源链接")
+    resource_type = str(item.get("type") or "other").strip().casefold()
+    type_label = RESOURCE_TYPE_LABELS.get(resource_type, RESOURCE_TYPE_LABELS["other"])
+    note = _first_nonempty(item.get("note"))
+    source = _first_nonempty(item.get("source"))
+    note_html = f'<p class="resource-note">{html.escape(note)}</p>' if note else ""
+    source_html = f'<p class="resource-source"><span>来源</span>{html.escape(source)}</p>' if source else ""
+    return (
+        '<article class="paper-resource">'
+        '<div class="resource-heading">'
+        f'<span class="resource-type">{html.escape(type_label)}</span>'
+        f'<a href="{href}" target="_blank" rel="noopener noreferrer">{html.escape(label)}</a>'
+        "</div>"
+        f"{note_html}{source_html}"
+        "</article>"
+    )
+
+
+def _safe_resource_href(url: object) -> str:
+    raw = str(url or "").strip()
+    parsed = urlparse(raw)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return ""
+    return html.escape(raw, quote=True)
 
 
 def _render_visual_item(cfg: APRZConfig, note_path: Path, item: Dict[str, object]) -> str:
@@ -249,6 +326,9 @@ def render_note(cfg: APRZConfig, payload: Dict[str, object]) -> Dict[str, object
     reading_status = _first_nonempty(stored_payload.get("reading_status"), stored_payload.get("status"), "read")
     evidence_basis = _first_nonempty(stored_payload.get("evidence_basis"), "Zotero metadata, local PDF path, or approved extraction evidence")
     next_action = _first_nonempty(stored_payload.get("next_action"))
+    visual_groups = _render_visual_groups(cfg, note_path, stored_payload.get("visuals", []))
+    other_visuals_section = _render_other_visuals(visual_groups["other"])
+    resources_section = _render_resources(stored_payload.get("resources", []))
     context = {
         "title": html.escape(str(stored_payload.get("title") or item.get("title_guess") or item.get("file_stem"))),
         "css_href": _rel_href(note_path, cfg.notes_root / "assets" / "note.css"),
@@ -281,13 +361,21 @@ def render_note(cfg: APRZConfig, payload: Dict[str, object]) -> Dict[str, object
         "priority": html.escape(priority),
         "problem": _render_text(stored_payload.get("problem")),
         "method_overview": _render_text(stored_payload.get("method_overview")),
+        "method_visuals": visual_groups["method"],
         "pipeline": _render_text(stored_payload.get("pipeline")),
+        "pipeline_visuals": visual_groups["pipeline"],
+        "resources_toc_link": _render_resources_toc_link(resources_section),
+        "resources_section": resources_section,
         "innovations": _render_text(stored_payload.get("innovations", [])),
         "experiments": _render_text(stored_payload.get("experiments")),
+        "experiments_visuals": visual_groups["experiments"],
         "findings": _render_text(stored_payload.get("findings")),
+        "findings_visuals": visual_groups["findings"],
         "limitations": _render_text(stored_payload.get("limitations")),
+        "limitations_visuals": visual_groups["limitations"],
         "value_for_user": _render_text(stored_payload.get("value_for_user")),
-        "visuals_section": _render_visuals(cfg, note_path, stored_payload.get("visuals", [])),
+        "visuals_toc_link": _render_visual_toc_link(other_visuals_section),
+        "visuals_section": other_visuals_section,
         "next_action": _render_text(next_action),
         "follow_up_questions": _render_text(stored_payload.get("follow_up_questions", [])),
         "generated_at": timestamp,

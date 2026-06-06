@@ -15,6 +15,7 @@ Zotero stays the source of truth for papers, attachments, and metadata. This ski
 - Builds reading packs for Codex-assisted paper reading.
 - Extracts PDF text with tools already available in the environment.
 - Renders selected PDF pages with Poppler and crops inspected architecture figures with Pillow for HTML note evidence.
+- Records paper-visible code, project, dataset, benchmark, or model links in an optional reproducibility resources section.
 - Renders Chinese technical HTML notes with a readable paper header, metadata chips, evidence basis, table of contents, note links, and PDF links.
 - Refreshes a static HTML paper-library dashboard with search, status filters, research categories, processing queue, expandable paper cards, note links, and PDF links.
 - Writes only inside the configured `notes_root`.
@@ -87,7 +88,9 @@ Full-text PDF extraction is optional but recommended. For `readpack` to extract 
 
 If none of these extractors is available, `readpack` still returns paper metadata, paths, and note targets, but sets `extraction_status: "no_extractor_available"`. Codex must not claim to have read the full PDF in that state.
 
-Architecture figure cropping is a normal HTML note step when visual tools are available. It uses Poppler `pdfinfo`/`pdftoppm` plus Pillow. Codex should first render and inspect the target page, then pass an explicit `--bbox x1,y1,x2,y2` to crop the final PNG; if no useful figure is found, the note should state that limitation.
+Architecture figure cropping is a normal HTML note step when visual tools are available. It uses Poppler `pdfinfo`/`pdftoppm` plus Pillow. Codex should first render and inspect the target page, then pass an explicit `--bbox x1,y1,x2,y2` to crop the final PNG. Cropped images are embedded beside the matching note section via `visuals[].linked_section`, usually `method` or `pipeline`; if no useful figure is found, the note should state that limitation.
+
+Reproducibility resources are optional. Codex should record code, project page, dataset, benchmark, or model links only when the URL is explicitly visible in the paper/readpack or supplied by the user; it should not search for or guess missing links.
 
 ## Skill Layout
 

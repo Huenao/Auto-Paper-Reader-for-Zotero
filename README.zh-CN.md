@@ -15,6 +15,7 @@ Zotero 仍然是论文、附件和元数据的来源。这个 Skill 把 Zotero P
 - 为 Codex 构建 reading pack，辅助论文阅读和总结。
 - 使用当前环境中已经存在的 PDF 文本提取工具。
 - 使用 Poppler 渲染指定 PDF 页面，并用 Pillow 裁剪已经检查过的方法架构图，作为 HTML 笔记中的图证据。
+- 在可选的复现资源区记录论文中明确给出的代码、项目页、数据集、benchmark 或模型链接。
 - 根据结构化 note payload 渲染中文技术 HTML 论文笔记，包含论文摘要区、元数据 chips、证据来源、目录、打开笔记和打开原 PDF。
 - 刷新静态 HTML 论文库 dashboard，支持搜索、状态筛选、研究分类、处理队列、可展开论文卡片、打开笔记和打开原 PDF。
 - 只写入配置好的 `notes_root`。
@@ -87,7 +88,9 @@ Codex 的 Zotero 插件或 Zotero local API 是首选访问路径。如果可用
 
 如果这些提取器都不可用，`readpack` 仍会返回论文元数据、路径和目标笔记位置，但会设置 `extraction_status: "no_extractor_available"`。在这种状态下，Codex 不应该声称已经阅读全文。
 
-方法架构图裁剪是 HTML 笔记生成中的常规尝试步骤，只在视觉工具可用时执行。它使用当前环境中已经存在的 Poppler `pdfinfo`/`pdftoppm` 和 Pillow。Codex 应先渲染并检查目标页面，再传入明确的 `--bbox x1,y1,x2,y2` 裁剪最终 PNG；如果没有找到有用图证据，应在 `evidence_basis` 中说明限制。
+方法架构图裁剪是 HTML 笔记生成中的常规尝试步骤，只在视觉工具可用时执行。它使用当前环境中已经存在的 Poppler `pdfinfo`/`pdftoppm` 和 Pillow。Codex 应先渲染并检查目标页面，再传入明确的 `--bbox x1,y1,x2,y2` 裁剪最终 PNG。裁剪图会通过 `visuals[].linked_section` 嵌入对应笔记章节旁边，方法架构图通常使用 `method` 或 `pipeline`；如果没有找到有用图证据，应在 `evidence_basis` 中说明限制。
+
+复现资源是可选信息。Codex 只应记录论文/readpack 中明确可见或用户提供的代码、项目页、数据集、benchmark 或模型 URL；不要联网搜索或猜测缺失链接。
 
 ## Skill 目录结构
 

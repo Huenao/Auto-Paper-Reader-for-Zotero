@@ -204,6 +204,7 @@ Codex writes this JSON payload before `render-note`:
   "problem": "...",
   "method_overview": "...",
   "pipeline": "...",
+  "resources": [],
   "innovations": ["..."],
   "experiments": "...",
   "findings": "...",
@@ -230,6 +231,31 @@ Optional Paper Vault-style display fields are supported:
 ```
 
 These optional fields improve the standalone note header and the local index dashboard. Do not make them mandatory; older payloads should continue to render with safe defaults.
+
+Optional `resources` entries record reproducibility links that are explicitly present in the paper text or supplied by the user. Do not infer or search for links when the paper does not provide them:
+
+```json
+{
+  "resources": [
+    {
+      "type": "code",
+      "label": "Official GitHub repository",
+      "url": "https://github.com/example/project",
+      "source": "method section footnote",
+      "note": "官方代码实现。"
+    },
+    {
+      "type": "dataset",
+      "label": "Training dataset page",
+      "url": "https://datasets.example.org/paper",
+      "source": "experiments section",
+      "note": "训练数据下载页。"
+    }
+  ]
+}
+```
+
+Allowed `resources[].type`: `code`, `project`, `dataset`, `benchmark`, `model`, `other`. The renderer only creates links for `http://` or `https://` URLs; unsafe schemes and local paths are skipped.
 
 For new notes, `visuals` entries should be copied from `extract-visuals` output when a useful inspected crop exists, then edited by Codex after inspecting the images:
 

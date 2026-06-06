@@ -63,6 +63,7 @@ class RenderTests(unittest.TestCase):
             self.assertIn("reading-status", html)
             self.assertIn("证据来源", html)
             self.assertIn("目录", html)
+            self.assertNotIn("开源与数据资源", html)
             self.assertIn("可借鉴到 RAG 代理。", html)
             backups = list((cfg.notes_root / "data" / "backups").glob("*.html"))
             self.assertEqual(len(backups), 1)
@@ -149,6 +150,10 @@ class RenderTests(unittest.TestCase):
             image = cfg.notes_root / "assets" / "papers" / "sha256-test" / "images" / "figure-001.png"
             image.parent.mkdir(parents=True)
             image.write_bytes(b"\x89PNG\r\n\x1a\n")
+            pipeline_image = image.parent / "figure-002.png"
+            pipeline_image.write_bytes(b"\x89PNG\r\n\x1a\n")
+            other_image = image.parent / "figure-003.png"
+            other_image.write_bytes(b"\x89PNG\r\n\x1a\n")
 
             result = render_note(
                 cfg,
@@ -159,6 +164,36 @@ class RenderTests(unittest.TestCase):
                     "problem": "- 问题一\n- 问题二",
                     "method_overview": "> 关键直觉：先检测，再解释。\n\n方法分成两步。",
                     "pipeline": "1. 提取候选图表\n2. 写入 HTML note",
+                    "resources": [
+                        {
+                            "type": "code",
+                            "label": "Official GitHub",
+                            "url": "https://github.com/example/project",
+                            "source": "method section",
+                            "note": "官方代码实现。",
+                        },
+                        {
+                            "type": "dataset",
+                            "label": "Dataset page",
+                            "url": "https://datasets.example.org/paper",
+                            "source": "experiments section",
+                            "note": "训练数据下载页。",
+                        },
+                        {
+                            "type": "code",
+                            "label": "Unsafe JS",
+                            "url": "javascript:alert(1)",
+                            "source": "bad fixture",
+                            "note": "不应渲染。",
+                        },
+                        {
+                            "type": "dataset",
+                            "label": "Local file",
+                            "url": "/tmp/local-dataset",
+                            "source": "bad fixture",
+                            "note": "不应渲染。",
+                        },
+                    ],
                     "experiments": "| 数据集 | 指标 |\n| --- | --- |\n| A | Accuracy |",
                     "findings": "图表证据帮助复核结论。",
                     "limitations": "视觉提取依赖本地工具。",
@@ -172,6 +207,24 @@ class RenderTests(unittest.TestCase):
                             "visual_type": "figure",
                             "evidence_summary": "展示检测和解释两个阶段。",
                             "linked_section": "method",
+                        },
+                        {
+                            "label": "图 2",
+                            "caption": "Pipeline 细节。",
+                            "page": 4,
+                            "asset_path": str(pipeline_image),
+                            "visual_type": "figure",
+                            "evidence_summary": "展示流程中的两个步骤。",
+                            "linked_section": "pipeline",
+                        },
+                        {
+                            "label": "图 3",
+                            "caption": "补充图。",
+                            "page": 5,
+                            "asset_path": str(other_image),
+                            "visual_type": "figure",
+                            "evidence_summary": "未匹配章节时保留在其他图表证据。",
+                            "linked_section": "appendix",
                         }
                     ],
                 },
@@ -182,10 +235,37 @@ class RenderTests(unittest.TestCase):
             self.assertIn('<ol class="note-list ordered">', html)
             self.assertIn('<blockquote class="note-callout">', html)
             self.assertIn('<table class="note-table">', html)
-            self.assertIn('<section id="visuals" class="note-section visual-section">', html)
+            self.assertIn('<section id="resources" class="note-section resource-section"><h2>开源与数据资源</h2>', html)
+            self.assertIn('href="https://github.com/example/project"', html)
+            self.assertIn('href="https://datasets.example.org/paper"', html)
+            self.assertIn("官方代码实现。", html)
+            self.assertIn("训练数据下载页。", html)
+            self.assertIn("method section", html)
+            self.assertNotIn("javascript:alert", html)
+            self.assertNotIn("/tmp/local-dataset", html)
+            self.assertIn('<section id="visuals" class="note-section visual-section"><h2>其他图表证据</h2>', html)
             self.assertIn('<figure class="paper-visual">', html)
             self.assertIn('alt="图 1 整体方法流程。"', html)
+            self.assertIn('alt="图 2 Pipeline 细节。"', html)
+            self.assertIn('alt="图 3 补充图。"', html)
             self.assertIn("展示检测和解释两个阶段。", html)
+            method_start = html.index('<section id="method"')
+            method_end = html.index('<section id="pipeline"')
+            method_html = html[method_start:method_end]
+            self.assertLess(method_html.index("方法分成两步。"), method_html.index('alt="图 1 整体方法流程。"'))
+            self.assertNotIn('alt="图 2 Pipeline 细节。"', method_html)
+            pipeline_start = html.index('<section id="pipeline"')
+            resources_start = html.index('<section id="resources"')
+            innovations_start = html.index('<section id="innovations"')
+            self.assertLess(pipeline_start, resources_start)
+            self.assertLess(resources_start, innovations_start)
+            pipeline_end = resources_start
+            pipeline_html = html[pipeline_start:pipeline_end]
+            self.assertIn('alt="图 2 Pipeline 细节。"', pipeline_html)
+            other_start = html.index('<section id="visuals"')
+            questions_start = html.index('<section id="questions"')
+            other_html = html[other_start:questions_start]
+            self.assertIn('alt="图 3 补充图。"', other_html)
 
     def test_render_note_skips_visuals_outside_notes_root(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -222,6 +302,7 @@ class RenderTests(unittest.TestCase):
             )
 
             html = Path(result["note_abs_path"]).read_text()
+            self.assertIn('<section id="visuals" class="note-section visual-section"><h2>其他图表证据</h2>', html)
             self.assertIn("图片路径被安全策略跳过", html)
             self.assertNotIn(str(outside), html)
 
